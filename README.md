@@ -6,9 +6,9 @@ A full-stack music player starter project with:
 
 ## Project Structure
 
-- `frontend/` React app
-- `backend/` Express API
-- root `package.json` to run both apps together
+- frontend/ React app
+- backend/ Express API
+- root package.json to run both apps together
 
 ## Quick Start
 
@@ -39,6 +39,6 @@ A full-stack music player starter project with:
 ## Available Scripts
 
 At root:
-- `npm run dev` starts frontend + backend
-- `npm run build` builds frontend
-- `npm run start` starts backend in production mode
+- npm run dev starts frontend + backend
+- npm run build builds frontend
+- npm run start starts backend in production mode
