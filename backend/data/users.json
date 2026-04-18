@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Alex Johnson",
+      "email": "alex@tuneon.com",
+      "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoXe.FKLv2DV6rXmEAI0H4.xBF5BYqPx4F8K",
+      "createdAt": "2026-04-17T16:54:54.190Z"
+    },
+    {
+      "id": "1776445200933",
+      "name": "sadika arjun",
+      "email": "aab@gmail.com",
+      "passwordHash": "$2b$10$j32GwuA/ygswF0yFLiWUJ.d/bfKHbM70.n9ljM8YEg7nquaiYoXbe",
+      "createdAt": "2026-04-17T17:00:00.933Z"
+    }
+  ]
+}
