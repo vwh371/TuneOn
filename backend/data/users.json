@@ -13,6 +13,13 @@
       "email": "aab@gmail.com",
       "passwordHash": "$2b$10$j32GwuA/ygswF0yFLiWUJ.d/bfKHbM70.n9ljM8YEg7nquaiYoXbe",
       "createdAt": "2026-04-17T17:00:00.933Z"
+    },
+    {
+      "id": "1776604111144",
+      "name": "sadika arjun ",
+      "email": "sad@gmail.com",
+      "passwordHash": "$2b$10$9AWiRRQappJNHP81ryA87usvxHKNZNszvLytq4NleqQbgV8E1wuHC",
+      "createdAt": "2026-04-19T13:08:31.144Z"
     }
   ]
 }
