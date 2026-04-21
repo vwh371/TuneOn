@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import Header from "../components/Header";
+import Sidebar from "../components/Sidebar";
 
 const moods = ["focus", "chill", "workout", "party", "night", "study"];
 
@@ -164,45 +166,25 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_15%,rgba(29,185,84,0.24),transparent_35%),radial-gradient(circle_at_90%_5%,rgba(59,130,246,0.2),transparent_28%),radial-gradient(circle_at_50%_120%,rgba(234,179,8,0.15),transparent_32%),linear-gradient(155deg,#040b08_0%,#091914_45%,#070f1a_100%)] px-4 py-8 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="rounded-4xl border border-white/12 bg-black/35 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.38em] text-[#1db954]">TuneOn</p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Good evening, {greetingName}.</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
-                Your home feed adapts to mood and taste, so each refresh feels like a custom mix made for you.
-              </p>
-            </div>
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row">
+        <Sidebar />
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/8 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
-            >
-              Log out
-            </button>
-          </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold uppercase tracking-[0.38em] text-[#1db954]">TuneOn</p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Good evening, {greetingName}.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
+            Your home feed adapts to mood and taste, so each refresh feels like a custom mix made for you.
+          </p>
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            {moods.map((mood) => (
-              <button
-                key={mood}
-                type="button"
-                onClick={() => setActiveMood(mood)}
-                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] transition ${
-                  activeMood === mood
-                    ? "border border-[#1db954]/50 bg-[#1db954]/22 text-[#9cf6bb]"
-                    : "border border-white/15 bg-white/6 text-white/75 hover:bg-white/14"
-                }`}
-              >
-                {mood}
-              </button>
-            ))}
-          </div>
-        </header>
+          <Header
+            greetingName={greetingName}
+            moods={moods}
+            activeMood={activeMood}
+            onMoodChange={setActiveMood}
+            onLogout={handleLogout}
+          />
 
-        <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <article className="rounded-4xl border border-white/12 bg-[#0b1211]/94 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -299,7 +281,7 @@ export default function Home() {
                   <iframe
                     title="Spotify Player"
                     src={featureTrack.embedUrl}
-                    className="mt-4 h-[152px] w-full rounded-xl border border-white/10"
+                    className="mt-4 h-38 w-full rounded-xl border border-white/10"
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                     loading="lazy"
                   />
@@ -349,7 +331,8 @@ export default function Home() {
               )}
             </section>
           </aside>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   );
