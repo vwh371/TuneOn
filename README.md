@@ -35,6 +35,25 @@ A full-stack music player starter project with:
 - Backend: http://localhost:5000
 - Health route: http://localhost:5000/api/health
 - Tracks route: http://localhost:5000/api/tracks
+- YouTube recommendations: http://localhost:5000/api/youtube/recommendations?mood=focus&limit=8
+- Spotify recommendations: http://localhost:5000/api/spotify/recommendations?mood=focus&limit=8
+
+## Backend Environment Variables
+
+Create `backend/.env` and set:
+
+```bash
+PORT=5000
+JWT_SECRET=your-secret-key-change-in-production
+YOUTUBE_API_KEY=your-youtube-data-api-v3-key
+SPOTIFY_CLIENT_ID=your-spotify-client-id
+SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
+```
+
+Notes:
+- `YOUTUBE_API_KEY` enables YouTube-powered recommendations.
+- Spotify variables enable Spotify-powered recommendations.
+- Home recommendations now try YouTube first, then Spotify, then TuneOn local fallback.
 
 ## Available Scripts
 

@@ -43,6 +43,77 @@ Response:
 }
 ```
 
+#### YouTube Recommendations
+```
+GET /api/youtube/recommendations?mood=focus&genre=lofi&limit=8
+```
+Response:
+```json
+{
+  "source": "youtube",
+  "selectedMood": "focus",
+  "selectedGenre": "lofi",
+  "recommendations": [
+    {
+      "id": "yt_xxxxx",
+      "title": "Lofi Mix",
+      "artist": "Channel Name",
+      "genre": "YouTube Music",
+      "cover": "https://...",
+      "externalUrl": "https://www.youtube.com/watch?v=xxxxx",
+      "embedUrl": "https://www.youtube.com/embed/xxxxx"
+    }
+  ]
+}
+```
+
+#### YouTube Song Search
+```
+GET /api/youtube/search?q=blinding+lights&limit=8
+```
+Response:
+```json
+{
+  "source": "youtube",
+  "query": "blinding lights",
+  "results": [
+    {
+      "id": "yt_xxxxx",
+      "title": "The Weeknd - Blinding Lights",
+      "artist": "The Weeknd",
+      "genre": "YouTube Music",
+      "cover": "https://...",
+      "externalUrl": "https://www.youtube.com/watch?v=xxxxx",
+      "embedUrl": "https://www.youtube.com/embed/xxxxx"
+    }
+  ]
+}
+```
+
+#### Spotify Recommendations
+```
+GET /api/spotify/recommendations?mood=focus&genre=lofi&limit=8
+```
+Response:
+```json
+{
+  "source": "spotify",
+  "selectedMood": "focus",
+  "selectedGenre": "lofi",
+  "recommendations": [
+    {
+      "id": "spotify-track-id",
+      "title": "Track Name",
+      "artist": "Artist",
+      "genre": "Spotify",
+      "cover": "https://...",
+      "externalUrl": "https://open.spotify.com/track/...",
+      "embedUrl": "https://open.spotify.com/embed/track/..."
+    }
+  ]
+}
+```
+
 ### Authentication Endpoints
 
 #### Register
@@ -166,6 +237,9 @@ Create a `.env` file (optional):
 ```
 PORT=5000
 JWT_SECRET=your-secret-key-change-in-production
+YOUTUBE_API_KEY=your-youtube-data-api-v3-key
+SPOTIFY_CLIENT_ID=your-spotify-client-id
+SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
 ```
 
 The JWT_SECRET defaults to "your-secret-key-change-in-production" if not provided.

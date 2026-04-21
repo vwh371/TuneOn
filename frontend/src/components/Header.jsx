@@ -1,10 +1,20 @@
 const moodLabel = (value) => value.charAt(0).toUpperCase() + value.slice(1);
 
-export default function Header({ greetingName, moods, activeMood, onMoodChange, onLogout }) {
+export default function Header({
+  greetingName,
+  moods,
+  activeMood,
+  onMoodChange,
+  onLogout,
+  searchQuery,
+  onSearchQueryChange,
+  onSearchSubmit,
+  searchStatus,
+}) {
   return (
     <header className="rounded-4xl border border-white/12 bg-black/35 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-55 flex-1">
+        <form onSubmit={onSearchSubmit} className="relative min-w-55 flex-1">
           <svg
             viewBox="0 0 24 24"
             aria-hidden="true"
@@ -18,10 +28,19 @@ export default function Header({ greetingName, moods, activeMood, onMoodChange, 
 
           <input
             type="search"
-            placeholder="Search songs, albums, artists, podcasts"
-            className="w-full rounded-2xl border border-white/12 bg-white/9 py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-white/35 focus:bg-white/12"
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
+            placeholder="Search songs, albums, artists"
+            className="w-full rounded-2xl border border-white/12 bg-white/9 py-3 pl-11 pr-24 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-white/35 focus:bg-white/12"
           />
-        </div>
+
+          <button
+            type="submit"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-xl border border-[#1db954]/50 bg-[#1db954]/20 px-3 py-1.5 text-xs font-semibold text-[#9cf6bb] transition hover:bg-[#1db954]/30"
+          >
+            {searchStatus === "loading" ? "..." : "Search"}
+          </button>
+        </form>
 
         <button
           type="button"

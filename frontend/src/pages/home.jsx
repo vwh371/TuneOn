@@ -14,6 +14,9 @@ export default function Home() {
   const [sourceLabel, setSourceLabel] = useState("TuneOn");
   const [activeMood, setActiveMood] = useState("focus");
   const [activeGenre, setActiveGenre] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchStatus, setSearchStatus] = useState("idle");
+  const [searchError, setSearchError] = useState("");
 
   const user = useMemo(() => {
     const stored = localStorage.getItem("user");
@@ -87,16 +90,30 @@ export default function Home() {
           params.set("genre", activeGenre);
         }
 
-        const response = await fetch(`/api/spotify/recommendations?${params.toString()}`, {
-          signal: controller.signal,
-        });
+        const externalSources = [
+          { endpoint: "/api/youtube/recommendations", label: "YouTube" },
+          { endpoint: "/api/spotify/recommendations", label: "Spotify" },
+        ];
 
-        if (response.ok) {
+        for (const source of externalSources) {
+          const response = await fetch(`${source.endpoint}?${params.toString()}`, {
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            continue;
+          }
+
           const data = await response.json();
           const list = data.recommendations || [];
+
+          if (list.length === 0) {
+            continue;
+          }
+
           setRecommendations(list);
           setSelectedTrack(list[0] || null);
-          setSourceLabel("Spotify");
+          setSourceLabel(source.label);
           setSuggestStatus("ready");
           return;
         }
@@ -117,6 +134,7 @@ export default function Home() {
           previewUrl: "",
           cover: "",
           album: "",
+          source: "tuneon",
         }));
 
         setRecommendations(fallbackList);
@@ -164,8 +182,45 @@ export default function Home() {
     setActiveGenre((current) => (current === genre ? "" : genre));
   };
 
+  const handleSearchSubmit = async (event) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
+    setSearchStatus("loading");
+    setSearchError("");
+
+    try {
+      const params = new URLSearchParams({ q: query, limit: "8" });
+      const response = await fetch(`/api/youtube/search?${params.toString()}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not search songs");
+      }
+
+      const list = data.results || [];
+      setSearchStatus("ready");
+      setRecommendations(list);
+
+      if (list.length > 0) {
+        setSelectedTrack(list[0]);
+        setSourceLabel("YouTube search");
+      } else {
+        setSelectedTrack(null);
+        setSourceLabel("No results");
+      }
+    } catch (err) {
+      setSearchStatus("error");
+      setSearchError(err.message || "Could not search songs");
+    }
+  };
+
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_15%,rgba(29,185,84,0.24),transparent_35%),radial-gradient(circle_at_90%_5%,rgba(59,130,246,0.2),transparent_28%),radial-gradient(circle_at_50%_120%,rgba(234,179,8,0.15),transparent_32%),linear-gradient(155deg,#040b08_0%,#091914_45%,#070f1a_100%)] px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_15%,rgba(29,185,84,0.24),transparent_35%),radial-gradient(circle_at_90%_5%,rgba(59,130,246,0.2),transparent_28%),radial-gradient(circle_at_50%_120%,rgba(234,179,8,0.15),transparent_32%),linear-gradient(155deg,#040b08_0%,#091914_45%,#070f1a_100%)] px-4 py-8 pb-28 text-white sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row">
         <Sidebar />
 
@@ -182,14 +237,18 @@ export default function Home() {
             activeMood={activeMood}
             onMoodChange={setActiveMood}
             onLogout={handleLogout}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onSearchSubmit={handleSearchSubmit}
+            searchStatus={searchStatus}
           />
 
-          <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <section className="mt-6 grid gap-6">
           <article className="rounded-4xl border border-white/12 bg-[#0b1211]/94 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">Made for you</h2>
-                <p className="mt-1 text-sm text-white/65">Suggestion engine: mood + genre + Spotify discovery</p>
+                <p className="mt-1 text-sm text-white/65">Suggestion engine: mood + genre + YouTube + Spotify discovery</p>
               </div>
               <span className="rounded-full border border-cyan-300/35 bg-cyan-300/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100">
                 {activeMood} mode
@@ -197,6 +256,10 @@ export default function Home() {
             </div>
 
             <p className="mt-3 text-xs uppercase tracking-[0.22em] text-white/50">Source: {sourceLabel}</p>
+
+            {searchStatus === "error" && (
+              <p className="mt-4 rounded-2xl border border-red-400/35 bg-red-900/20 px-4 py-3 text-sm text-red-200">{searchError}</p>
+            )}
 
             {topGenres.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-2">
@@ -256,50 +319,6 @@ export default function Home() {
             )}
           </article>
 
-          <aside className="space-y-6">
-            <section className="rounded-4xl border border-white/12 bg-white/10 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-8">
-              <h2 className="text-2xl font-bold tracking-tight">Now playing</h2>
-
-              <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
-                {featureTrack?.cover ? (
-                  <img
-                    src={featureTrack.cover}
-                    alt={featureTrack.title}
-                    className="mx-auto h-44 w-44 rounded-2xl object-cover shadow-[0_20px_40px_rgba(0,0,0,0.45)]"
-                  />
-                ) : (
-                  <div className="mx-auto h-36 w-36 rounded-full border-8 border-black/65 bg-[conic-gradient(from_180deg,#0b1210,#1a2f2a,#0b1210)] shadow-[inset_0_0_0_16px_rgba(255,255,255,0.05)]" />
-                )}
-
-                <p className="mt-5 text-xs font-semibold uppercase tracking-[0.34em] text-white/45">Featured track</p>
-                <h3 className="mt-2 text-xl font-bold">{featureTrack?.title || "No track available"}</h3>
-                <p className="mt-1 text-sm text-white/70">
-                  {featureTrack ? `${featureTrack.artist} • ${featureTrack.genre}` : "Try refreshing the page."}
-                </p>
-
-                {featureTrack?.embedUrl && (
-                  <iframe
-                    title="Spotify Player"
-                    src={featureTrack.embedUrl}
-                    className="mt-4 h-38 w-full rounded-xl border border-white/10"
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                  />
-                )}
-
-                {featureTrack?.externalUrl && (
-                  <a
-                    href={featureTrack.externalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-[#1db954]/45 bg-[#1db954]/20 px-4 py-2 text-sm font-semibold text-[#9cf6bb] transition hover:bg-[#1db954]/30"
-                  >
-                    Open in Spotify
-                  </a>
-                )}
-              </div>
-            </section>
-
             <section className="rounded-4xl border border-white/12 bg-[#0d1519]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] sm:p-8">
               <h2 className="text-xl font-bold tracking-tight">Library pulse</h2>
 
@@ -330,10 +349,63 @@ export default function Home() {
                 </div>
               )}
             </section>
-          </aside>
           </section>
         </div>
       </div>
+
+      {featureTrack?.embedUrl && (
+        <iframe
+          title={featureTrack?.source === "youtube" ? "YouTube Hidden Player" : "Spotify Hidden Player"}
+          src={featureTrack?.source === "youtube" ? `${featureTrack.embedUrl}?autoplay=1` : featureTrack.embedUrl}
+          className="h-0 w-0 border-0 opacity-0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+        />
+      )}
+
+      {featureTrack && (
+        <div className="fixed bottom-3 left-1/2 z-30 w-[min(1200px,calc(100%-1.5rem))] -translate-x-1/2 rounded-2xl border border-white/15 bg-[#1a1c1f]/96 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:px-5">
+          <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_auto]">
+            <div className="flex min-w-0 items-center gap-3">
+              {featureTrack.cover ? (
+                <img src={featureTrack.cover} alt={featureTrack.title} className="h-11 w-11 rounded-md object-cover" />
+              ) : (
+                <div className="h-11 w-11 rounded-md bg-white/12" />
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-base font-bold leading-tight text-white">{featureTrack.title}</p>
+                <p className="truncate text-sm text-white/60">{featureTrack.artist}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-white/90">
+              <button type="button" className="rounded-full p-2 transition hover:bg-white/10" aria-label="Previous track">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M6 5.25a.75.75 0 011.2-.6l8.5 6.75a.75.75 0 010 1.2L7.2 19.35A.75.75 0 016 18.75V5.25zm10 0a.75.75 0 111.5 0v13.5a.75.75 0 11-1.5 0V5.25z"/></svg>
+              </button>
+              <button type="button" className="rounded-full bg-white p-2 text-black transition hover:scale-[1.03]" aria-label="Play in embedded player">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M8.5 6.5v11l9-5.5-9-5.5z"/></svg>
+              </button>
+              <button type="button" className="rounded-full p-2 transition hover:bg-white/10" aria-label="Next track">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M18 5.25a.75.75 0 00-1.2-.6l-8.5 6.75a.75.75 0 000 1.2l8.5 6.75a.75.75 0 001.2-.6V5.25zm-10 0a.75.75 0 10-1.5 0v13.5a.75.75 0 101.5 0V5.25z"/></svg>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <p className="hidden text-xs uppercase tracking-[0.2em] text-white/45 sm:block">{sourceLabel}</p>
+              {featureTrack.externalUrl && (
+                <a
+                  href={featureTrack.externalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-white/20 bg-white/8 px-3 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/14"
+                >
+                  Open
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

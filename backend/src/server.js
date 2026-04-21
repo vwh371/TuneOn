@@ -1,10 +1,14 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { getUserByEmail, createUser } from "./db.js";
 import { hashPassword, comparePasswords, generateToken, authMiddleware } from "./auth.js";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -14,6 +18,7 @@ app.use(express.json());
 
 const spotifyClientId = process.env.SPOTIFY_CLIENT_ID || "";
 const spotifyClientSecret = process.env.SPOTIFY_CLIENT_SECRET || "";
+const youtubeApiKey = process.env.YOUTUBE_API_KEY || "";
 let spotifyTokenCache = {
   accessToken: "",
   expiresAt: 0,
@@ -209,6 +214,19 @@ function moodToSpotifyQuery(mood) {
   return moodMap[String(mood).toLowerCase()] || moodMap.focus;
 }
 
+function moodToYouTubeQuery(mood) {
+  const moodMap = {
+    focus: "lofi beats instrumental focus music",
+    chill: "chill music mix",
+    workout: "workout motivation music mix",
+    party: "party hits music mix",
+    night: "late night vibes music mix",
+    study: "study music concentration mix",
+  };
+
+  return moodMap[String(mood).toLowerCase()] || moodMap.focus;
+}
+
 function toSpotifyTrack(item) {
   const image = item.album?.images?.[0]?.url || "";
   const artistNames = (item.artists || []).map((artist) => artist.name).join(", ");
@@ -226,7 +244,39 @@ function toSpotifyTrack(item) {
     durationMs: item.duration_ms,
     explicit: Boolean(item.explicit),
     popularity: item.popularity,
+    source: "spotify",
     reason: "Suggested from Spotify based on your selected mood",
+  };
+}
+
+function toYouTubeTrack(item) {
+  const videoId = item.id?.videoId;
+
+  if (!videoId) {
+    return null;
+  }
+
+  const thumb =
+    item.snippet?.thumbnails?.high?.url ||
+    item.snippet?.thumbnails?.medium?.url ||
+    item.snippet?.thumbnails?.default?.url ||
+    "";
+
+  return {
+    id: `yt_${videoId}`,
+    title: item.snippet?.title || "Untitled",
+    artist: item.snippet?.channelTitle || "YouTube Creator",
+    genre: "YouTube Music",
+    album: item.snippet?.channelTitle || "",
+    cover: thumb,
+    previewUrl: "",
+    externalUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    embedUrl: `https://www.youtube.com/embed/${videoId}`,
+    durationMs: 0,
+    explicit: false,
+    popularity: 0,
+    source: "youtube",
+    reason: "Suggested from YouTube based on your selected mood",
   };
 }
 
@@ -375,6 +425,84 @@ app.get("/api/spotify/recommendations", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error.message || "Could not fetch Spotify recommendations",
+    });
+  }
+});
+
+app.get("/api/youtube/recommendations", async (req, res) => {
+  try {
+    if (!youtubeApiKey) {
+      return res.status(500).json({
+        error: "YouTube API key is missing. Set YOUTUBE_API_KEY in backend/.env.",
+      });
+    }
+
+    const mood = String(req.query.mood || "focus").toLowerCase();
+    const genre = String(req.query.genre || "").trim();
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 20));
+
+    const baseQuery = moodToYouTubeQuery(mood);
+    const searchQuery = genre ? `${baseQuery} ${genre} music` : baseQuery;
+
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=${limit}&q=${encodeURIComponent(searchQuery)}&key=${youtubeApiKey}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "YouTube search failed");
+    }
+
+    const recommendations = (data.items || []).map(toYouTubeTrack).filter(Boolean);
+
+    res.json({
+      source: "youtube",
+      selectedMood: mood,
+      selectedGenre: genre || "any",
+      recommendations,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message || "Could not fetch YouTube recommendations",
+    });
+  }
+});
+
+app.get("/api/youtube/search", async (req, res) => {
+  try {
+    if (!youtubeApiKey) {
+      return res.status(500).json({
+        error: "YouTube API key is missing. Set YOUTUBE_API_KEY in backend/.env.",
+      });
+    }
+
+    const query = String(req.query.q || "").trim();
+    const limit = Math.max(1, Math.min(Number(req.query.limit) || 10, 20));
+
+    if (!query) {
+      return res.status(400).json({ error: "Query parameter q is required" });
+    }
+
+    const searchQuery = `${query} audio`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=${limit}&q=${encodeURIComponent(searchQuery)}&key=${youtubeApiKey}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "YouTube search failed");
+    }
+
+    const results = (data.items || []).map(toYouTubeTrack).filter(Boolean);
+
+    res.json({
+      source: "youtube",
+      query,
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message || "Could not search YouTube songs",
     });
   }
 });
