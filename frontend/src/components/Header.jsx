@@ -24,9 +24,9 @@ export default function Header({
               d="M10.5 3.75a6.75 6.75 0 015.364 10.848l4.269 4.269a.75.75 0 11-1.06 1.06l-4.27-4.269A6.75 6.75 0 1110.5 3.75zm0 1.5a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5z"
               fill="currentColor"
             />
-          </svg>
+          </svg> 
 
-          <input
+          <input 
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}

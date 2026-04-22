@@ -1,4 +1,28 @@
 import { useState } from "react";
+import { useGoogleLogin } from "@react-oauth/google";
+import AppleSignin from "react-apple-signin-auth";
+
+function GoogleLogoButton({ onSuccess, onError }) {
+	const googleLogin = useGoogleLogin({
+		onSuccess,
+		onError,
+		scope: "openid email profile",
+		prompt: "select_account",
+	});
+
+	return (
+		<button
+			type="button"
+			onClick={() => googleLogin()}
+			className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+		>
+			<svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+				<path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-1.4 3.4-5.5 3.4-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 2.9 14.5 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.8 0 9.7-4.1 9.7-9.9 0-.7-.1-1.3-.2-1.9H12z" />
+			</svg>
+			<span>Continue with Google</span>
+		</button>
+	);
+}
 
 export default function Login() {
 	const [formData, setFormData] = useState({
@@ -8,8 +32,18 @@ export default function Login() {
 	});
 
 	const [isLoading, setIsLoading] = useState(false);
+	const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+	const [isAppleLoading, setIsAppleLoading] = useState(false);
+	const [selectedGoogleAccount, setSelectedGoogleAccount] = useState(null);
+	const [showForgotPassword, setShowForgotPassword] = useState(false);
+	const [forgotForm, setForgotForm] = useState({ emailOrId: "" });
+	const [forgotLoading, setForgotLoading] = useState(false);
+	const [forgotSuccess, setForgotSuccess] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState("");
+	const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+	const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID;
+	const appleRedirectUri = import.meta.env.VITE_APPLE_REDIRECT_URI;
 
 	const handleChange = (event) => {
 		const { name, value, type, checked } = event.target;
@@ -59,6 +93,139 @@ export default function Login() {
 		} finally {
 			setIsLoading(false);
 		}
+	};
+
+	const finishLogin = (data, welcomePrefix = "Welcome back") => {
+		localStorage.setItem("token", data.token);
+		localStorage.setItem("user", JSON.stringify(data.user));
+		setSuccess(`${welcomePrefix}, ${data.user.name}!`);
+
+		setTimeout(() => {
+			window.location.href = "/home";
+		}, 1200);
+	};
+
+	const handleGoogleSuccess = async (tokenResponse) => {
+		setError("");
+		setSuccess("");
+		setSelectedGoogleAccount(null);
+		setIsGoogleLoading(true);
+
+		try {
+			if (!tokenResponse?.access_token) {
+				setError("Google did not return an access token. Please try again.");
+				return;
+			}
+
+			const response = await fetch("/api/auth/google/token", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					accessToken: tokenResponse.access_token,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				setError(data.error || "Google sign-in failed");
+				return;
+			}
+
+			setSelectedGoogleAccount({
+				email: data.user?.email || "",
+				googleId: data.user?.googleId || "",
+			});
+
+			finishLogin(data, "Signed in");
+		} catch (err) {
+			setError(err.message || "An error occurred during Google sign-in");
+		} finally {
+			setIsGoogleLoading(false);
+		}
+	};
+
+	const handleForgotInputChange = (event) => {
+		setForgotForm({ emailOrId: event.target.value });
+	};
+
+	const handleForgotSubmit = async (event) => {
+		event?.preventDefault();
+		setError("");
+		setForgotSuccess("");
+		setForgotLoading(true);
+
+		try {
+			const response = await fetch("/api/auth/forgot-password", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ emailOrId: forgotForm.emailOrId.trim() }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				setError(data.error || "Could not send reset email");
+				return;
+			}
+
+			setForgotSuccess(data.message || "If an account exists, a reset email has been sent.");
+		} catch (err) {
+			setError(err.message || "Could not send reset email");
+		} finally {
+			setForgotLoading(false);
+		}
+	};
+
+	const handleGoogleError = () => {
+		setError("Google sign-in was cancelled or could not be completed.");
+	};
+
+	const handleAppleSuccess = async (appleResponse) => {
+		setError("");
+		setSuccess("");
+		setIsAppleLoading(true);
+
+		try {
+			const identityToken = appleResponse?.authorization?.id_token;
+
+			if (!identityToken) {
+				setError("Apple did not return a valid identity token. Please try again.");
+				return;
+			}
+
+			const response = await fetch("/api/auth/apple", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					identityToken,
+					user: appleResponse?.user,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				setError(data.error || "Apple sign-in failed");
+				return;
+			}
+
+			finishLogin(data, "Signed in");
+		} catch (err) {
+			setError(err.message || "An error occurred during Apple sign-in");
+		} finally {
+			setIsAppleLoading(false);
+		}
+	};
+
+	const handleAppleError = () => {
+		setError("Apple sign-in was cancelled or could not be completed.");
 	};
 
 	return (
@@ -152,10 +319,46 @@ export default function Login() {
 								<span>Remember me</span>
 							</label>
 
-							<a href="/" className="font-medium text-[#1db954] transition hover:text-[#4ef08a]">
+							<button
+								type="button"
+								onClick={() => {
+									setShowForgotPassword((current) => !current);
+									setError("");
+									setForgotSuccess("");
+								}}
+								className="font-medium text-[#1db954] transition hover:text-[#4ef08a]"
+							>
 								Forgot password?
-							</a>
+							</button>
 						</div>
+
+						{showForgotPassword && (
+							<div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+								<p className="text-xs uppercase tracking-[0.2em] text-white/45">Reset password</p>
+								<label className="block space-y-2">
+									<span className="text-sm text-white/80">Google ID or email</span>
+									<input
+										type="text"
+										name="emailOrId"
+										value={forgotForm.emailOrId}
+										onChange={handleForgotInputChange}
+										placeholder="name@gmail.com or Google ID"
+										className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#1db954] focus:bg-white/8 focus:ring-4 focus:ring-[#1db954]/20"
+									/>
+								</label>
+
+								<button
+									type="button"
+									onClick={handleForgotSubmit}
+									disabled={forgotLoading}
+									className="w-full rounded-full border border-white/20 bg-black/30 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-[#1db954]/60 hover:text-[#9bf8be] disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									{forgotLoading ? "Sending reset email..." : "Send reset email"}
+								</button>
+
+								{forgotSuccess && <p className="text-xs text-emerald-300/90">{forgotSuccess}</p>}
+							</div>
+						)}
 
 						{error && <p className="rounded-lg bg-red-900/20 border border-red-500/30 px-4 py-3 text-sm text-red-300">{error}</p>}
 
@@ -175,17 +378,59 @@ export default function Login() {
 							<span className="h-px flex-1 bg-white/10" />
 						</div>
 
-						<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-							{["Spotify", "Google", "Apple"].map((provider) => (
-								<button
-									key={provider}
-									type="button"
-									className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-[#1db954]/50 hover:bg-white/10"
-								>
-									{provider}
-								</button>
-							))}
+						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+							<div className="rounded-2xl border border-white/10 bg-white/5 p-2">
+								{googleClientId ? (
+									<GoogleLogoButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+								) : (
+									<button
+										type="button"
+										disabled
+										className="w-full cursor-not-allowed rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/50"
+									>
+										Google (set VITE_GOOGLE_CLIENT_ID)
+									</button>
+								)}
+							</div>
+
+							<div className="rounded-2xl border border-white/10 bg-white/5 p-2">
+								{appleClientId && appleRedirectUri ? (
+									<AppleSignin
+										authOptions={{
+											clientId: appleClientId,
+											scope: "email name",
+											redirectURI: appleRedirectUri,
+											usePopup: true,
+										}}
+										uiType="dark"
+										className="w-full"
+										noDefaultStyle={false}
+										buttonExtraChildren="Continue with Apple"
+										onSuccess={handleAppleSuccess}
+										onError={handleAppleError}
+									/>
+								) : (
+									<button
+										type="button"
+										disabled
+										className="w-full cursor-not-allowed rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/50"
+									>
+										Apple (set VITE_APPLE_CLIENT_ID + VITE_APPLE_REDIRECT_URI)
+									</button>
+								)}
+							</div>
 						</div>
+
+						{(isGoogleLoading || isAppleLoading) && (
+							<p className="text-xs text-center text-white/50">Completing social sign-in...</p>
+						)}
+
+						{selectedGoogleAccount?.email && (
+							<p className="text-xs text-center text-white/55">
+								Selected Google account: {selectedGoogleAccount.email}
+								{selectedGoogleAccount.googleId ? ` (ID: ${selectedGoogleAccount.googleId})` : ""}
+							</p>
+						)}
 
 						<p className="pt-2 text-center text-sm text-white/55">
 							New to TuneOn? <a href="/register" className="font-semibold text-[#1db954] hover:text-[#4ef08a]">Create an account</a>

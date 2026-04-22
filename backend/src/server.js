@@ -1,9 +1,23 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getUserByEmail, createUser } from "./db.js";
+import { OAuth2Client } from "google-auth-library";
+import appleSigninAuth from "apple-signin-auth";
+import nodemailer from "nodemailer";
+import {
+  getUserByEmail,
+  getUserByAppleId,
+  getUserByEmailOrGoogleId,
+  getUserByPasswordResetTokenHash,
+  createUser,
+  upsertGoogleUser,
+  upsertAppleUser,
+  savePasswordResetToken,
+  updateUserPassword,
+} from "./db.js";
 import { hashPassword, comparePasswords, generateToken, authMiddleware } from "./auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +33,16 @@ app.use(express.json());
 const spotifyClientId = process.env.SPOTIFY_CLIENT_ID || "";
 const spotifyClientSecret = process.env.SPOTIFY_CLIENT_SECRET || "";
 const youtubeApiKey = process.env.YOUTUBE_API_KEY || "";
+const googleClientId = process.env.GOOGLE_CLIENT_ID || "";
+const googleOAuthClient = googleClientId ? new OAuth2Client(googleClientId) : null;
+const appleClientId = process.env.APPLE_CLIENT_ID || "";
+const frontendBaseUrl = process.env.FRONTEND_BASE_URL || "http://localhost:5173";
+const smtpHost = process.env.SMTP_HOST || "";
+const smtpPort = Number(process.env.SMTP_PORT || "587");
+const smtpSecure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+const smtpUser = process.env.SMTP_USER || "";
+const smtpPass = process.env.SMTP_PASS || "";
+const emailFrom = process.env.EMAIL_FROM || smtpUser || "no-reply@tuneon.local";
 let spotifyTokenCache = {
   accessToken: "",
   expiresAt: 0,
@@ -280,6 +304,30 @@ function toYouTubeTrack(item) {
   };
 }
 
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
+function generateResetToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function createMailTransporter() {
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+}
+
 // Health check
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "TuneOn API" });
@@ -311,7 +359,7 @@ app.post("/api/auth/register", async (req, res) => {
 
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
-    const result = createUser(name, email, hashedPassword);
+    const result = createUser(name, email, hashedPassword, { authProvider: "local" });
 
     if (!result.success) {
       return res.status(500).json({ error: result.message });
@@ -344,6 +392,13 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
+    if (!user.passwordHash) {
+      const providerLabel = user.authProvider === "apple" ? "Apple" : "Google";
+      return res.status(401).json({
+        error: `This account uses ${providerLabel} sign-in. Please continue with ${providerLabel}.`,
+      });
+    }
+
     const isPasswordValid = await comparePasswords(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
@@ -363,6 +418,268 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Apple login endpoint
+app.post("/api/auth/apple", async (req, res) => {
+  try {
+    if (!appleClientId) {
+      return res.status(500).json({
+        error: "Apple auth is not configured on the server. Set APPLE_CLIENT_ID in backend/.env.",
+      });
+    }
+
+    const { identityToken, user: appleUserPayload } = req.body;
+
+    if (!identityToken) {
+      return res.status(400).json({ error: "Apple identity token is required" });
+    }
+
+    const payload = await appleSigninAuth.verifyIdToken(identityToken, {
+      audience: appleClientId,
+      ignoreExpiration: false,
+    });
+
+    const appleId = payload?.sub;
+    const verifiedEmail = payload?.email || "";
+    const providedEmail = appleUserPayload?.email || "";
+    const providedName =
+      appleUserPayload?.name?.firstName || appleUserPayload?.name?.lastName
+        ? `${appleUserPayload?.name?.firstName || ""} ${appleUserPayload?.name?.lastName || ""}`.trim()
+        : "";
+    const name = providedName || "Apple User";
+    const email = providedEmail || verifiedEmail;
+
+    if (!appleId) {
+      return res.status(401).json({ error: "Apple account verification failed" });
+    }
+
+    if (!email) {
+      const existingUser = getUserByAppleId(appleId);
+      if (!existingUser) {
+        return res.status(400).json({
+          error: "Apple did not provide an email. Please sign in once again and allow email sharing.",
+        });
+      }
+
+      const token = generateToken(existingUser.id, existingUser.email || "");
+      return res.json({
+        message: "Apple login successful",
+        user: {
+          id: existingUser.id,
+          name: existingUser.name,
+          email: existingUser.email || "",
+          authProvider: "apple",
+        },
+        token,
+      });
+    }
+
+    const result = upsertAppleUser({ name, email, appleId });
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.message || "Could not sign in with Apple" });
+    }
+
+    const token = generateToken(result.user.id, result.user.email || "");
+
+    res.json({
+      message: "Apple login successful",
+      user: result.user,
+      token,
+    });
+  } catch (error) {
+    console.error("Apple login error:", error);
+    res.status(401).json({ error: "Apple authentication failed" });
+  }
+});
+
+// Google login endpoint
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    if (!googleClientId || !googleOAuthClient) {
+      return res.status(500).json({
+        error: "Google auth is not configured on the server. Set GOOGLE_CLIENT_ID in backend/.env.",
+      });
+    }
+
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ error: "Google credential is required" });
+    }
+
+    const ticket = await googleOAuthClient.verifyIdToken({
+      idToken: credential,
+      audience: googleClientId,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const emailVerified = payload?.email_verified;
+    const name = payload?.name || "Google User";
+    const googleId = payload?.sub;
+    const avatarUrl = payload?.picture || "";
+
+    if (!email || !googleId || !emailVerified) {
+      return res.status(401).json({ error: "Google account verification failed" });
+    }
+
+    const result = upsertGoogleUser({ name, email, googleId, avatarUrl });
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.message || "Could not sign in with Google" });
+    }
+
+    const token = generateToken(result.user.id, result.user.email);
+
+    res.json({
+      message: "Google login successful",
+      user: result.user,
+      token,
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.status(401).json({ error: "Google authentication failed" });
+  }
+});
+
+// Google OAuth token login endpoint (used by custom clickable Google logo button)
+app.post("/api/auth/google/token", async (req, res) => {
+  try {
+    const { accessToken } = req.body;
+
+    if (!accessToken) {
+      return res.status(400).json({ error: "Google access token is required" });
+    }
+
+    const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const profile = await response.json();
+
+    if (!response.ok) {
+      return res.status(401).json({ error: profile.error_description || "Google authentication failed" });
+    }
+
+    const email = profile.email;
+    const emailVerified = profile.email_verified;
+    const name = profile.name || "Google User";
+    const googleId = profile.sub || profile.id;
+    const avatarUrl = profile.picture || "";
+
+    if (!email || !googleId || !emailVerified) {
+      return res.status(401).json({ error: "Google account verification failed" });
+    }
+
+    const result = upsertGoogleUser({ name, email, googleId, avatarUrl });
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.message || "Could not sign in with Google" });
+    }
+
+    const token = generateToken(result.user.id, result.user.email);
+
+    res.json({
+      message: "Google login successful",
+      user: result.user,
+      token,
+    });
+  } catch (error) {
+    console.error("Google token login error:", error);
+    res.status(401).json({ error: "Google authentication failed" });
+  }
+});
+
+app.post("/api/auth/forgot-password", async (req, res) => {
+  try {
+    const { emailOrId } = req.body;
+
+    if (!emailOrId) {
+      return res.status(400).json({ error: "Email or Google ID is required" });
+    }
+
+    const user = getUserByEmailOrGoogleId(emailOrId);
+
+    // Always return generic response to avoid user enumeration.
+    if (!user || !user.email) {
+      return res.json({
+        message: "If an account exists, a reset email has been sent.",
+      });
+    }
+
+    const transporter = createMailTransporter();
+    if (!transporter) {
+      return res.status(500).json({
+        error:
+          "Password reset email is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and EMAIL_FROM in backend/.env.",
+      });
+    }
+
+    const rawResetToken = generateResetToken();
+    const tokenHash = hashResetToken(rawResetToken);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30).toISOString();
+
+    const saveResult = savePasswordResetToken(user.id, tokenHash, expiresAt);
+    if (!saveResult.success) {
+      return res.status(500).json({ error: saveResult.message || "Could not create reset token" });
+    }
+
+    const resetLink = `${frontendBaseUrl}/reset-password?token=${encodeURIComponent(rawResetToken)}`;
+
+    await transporter.sendMail({
+      from: emailFrom,
+      to: user.email,
+      subject: "TuneOn password reset",
+      text: `Hi ${user.name || "there"},\n\nWe received a password reset request for your TuneOn account.\n\nUse this link to set a new password:\n${resetLink}\n\nThis link expires in 30 minutes.\n\nIf you didn't request this, you can ignore this email.`,
+      html: `<p>Hi ${user.name || "there"},</p><p>We received a password reset request for your TuneOn account.</p><p><a href="${resetLink}">Click here to set a new password</a></p><p>This link expires in 30 minutes.</p><p>If you didn't request this, you can ignore this email.</p>`,
+    });
+
+    res.json({ message: "If an account exists, a reset email has been sent." });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ error: "Could not process password reset request" });
+  }
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token || !password || !confirmPassword) {
+      return res.status(400).json({ error: "Token, password, and confirm password are required" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: "Passwords do not match" });
+    }
+
+    const tokenHash = hashResetToken(token);
+    const user = getUserByPasswordResetTokenHash(tokenHash);
+
+    if (!user) {
+      return res.status(400).json({ error: "Reset token is invalid or expired" });
+    }
+
+    const newPasswordHash = await hashPassword(password);
+    const updateResult = updateUserPassword(user.id, newPasswordHash);
+
+    if (!updateResult.success) {
+      return res.status(500).json({ error: updateResult.message || "Could not update password" });
+    }
+
+    res.json({ message: "Password updated successfully. You can now log in." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ error: "Could not reset password" });
   }
 });
 

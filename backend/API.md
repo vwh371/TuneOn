@@ -151,6 +151,98 @@ Content-Type: application/json
   "password": "password123"
 }
 ```
+
+#### Google Login
+```
+POST /api/auth/google
+Content-Type: application/json
+
+{
+  "credential": "google-id-token-from-gis"
+}
+```
+
+#### Google Login (Access Token)
+```
+POST /api/auth/google/token
+Content-Type: application/json
+
+{
+  "accessToken": "google-oauth-access-token"
+}
+```
+
+#### Forgot Password
+```
+POST /api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "emailOrId": "name@gmail.com or google-id"
+}
+```
+Response:
+```json
+{
+  "message": "If an account exists, a reset email has been sent."
+}
+```
+
+#### Reset Password
+```
+POST /api/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "token-from-email-link",
+  "password": "newpassword123",
+  "confirmPassword": "newpassword123"
+}
+```
+
+#### Apple Login
+```
+POST /api/auth/apple
+Content-Type: application/json
+
+{
+  "identityToken": "apple-id-token",
+  "user": {
+    "email": "optional-first-login-email",
+    "name": {
+      "firstName": "John",
+      "lastName": "Doe"
+    }
+  }
+}
+```
+Response:
+```json
+{
+  "message": "Apple login successful",
+  "user": {
+    "id": "1234567890",
+    "name": "John Doe",
+    "email": "john@privaterelay.appleid.com",
+    "authProvider": "apple"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+Response:
+```json
+{
+  "message": "Google login successful",
+  "user": {
+    "id": "1234567890",
+    "name": "John Doe",
+    "email": "john@gmail.com",
+    "avatarUrl": "https://...",
+    "authProvider": "google"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 Response:
 ```json
 {
@@ -211,6 +303,9 @@ The user database is stored in `data/users.json`:
       "name": "Alex Johnson",
       "email": "alex@tuneon.com",
       "passwordHash": "<bcrypt hash>",
+      "authProvider": "local",
+      "googleId": "optional-google-sub",
+      "avatarUrl": "optional-image-url",
       "createdAt": "2024-04-17T10:00:00.000Z"
     }
   ]
@@ -240,6 +335,15 @@ JWT_SECRET=your-secret-key-change-in-production
 YOUTUBE_API_KEY=your-youtube-data-api-v3-key
 SPOTIFY_CLIENT_ID=your-spotify-client-id
 SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
+GOOGLE_CLIENT_ID=your-google-oauth-client-id
+APPLE_CLIENT_ID=your-apple-service-id
+FRONTEND_BASE_URL=http://localhost:5173
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+EMAIL_FROM=TuneOn <your-email@gmail.com>
 ```
 
 The JWT_SECRET defaults to "your-secret-key-change-in-production" if not provided.
