@@ -17,7 +17,12 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState("idle");
   const [searchError, setSearchError] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
 
+  const handleTrackSelect = (track, autoPlay = false) => {
+    setSelectedTrack(track);
+    setIsPlaying(autoPlay && Boolean(track?.embedUrl));
+  };
   const user = useMemo(() => {
     const stored = localStorage.getItem("user");
 
@@ -112,7 +117,6 @@ export default function Home() {
           }
 
           setRecommendations(list);
-          setSelectedTrack(list[0] || null);
           setSourceLabel(source.label);
           setSuggestStatus("ready");
           return;
@@ -138,7 +142,6 @@ export default function Home() {
         }));
 
         setRecommendations(fallbackList);
-        setSelectedTrack(fallbackList[0] || null);
         setSourceLabel("TuneOn fallback");
         setSuggestStatus("ready");
       } catch (err) {
@@ -156,7 +159,7 @@ export default function Home() {
     return () => controller.abort();
   }, [activeMood, activeGenre]);
 
-  const featureTrack = selectedTrack || recommendations[0] || tracks[0];
+  const featureTrack = selectedTrack;
 
   const topGenres = useMemo(() => {
     const seen = new Set();
@@ -207,10 +210,8 @@ export default function Home() {
       setRecommendations(list);
 
       if (list.length > 0) {
-        setSelectedTrack(list[0]);
         setSourceLabel("YouTube search");
       } else {
-        setSelectedTrack(null);
         setSourceLabel("No results");
       }
     } catch (err) {
@@ -298,10 +299,10 @@ export default function Home() {
                     }`}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setSelectedTrack(track)}
+                    onClick={() => handleTrackSelect(track, true)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
-                        setSelectedTrack(track);
+                        handleTrackSelect(track, true);
                       }
                     }}
                   >
@@ -353,7 +354,7 @@ export default function Home() {
         </div>
       </div>
 
-      {featureTrack?.embedUrl && (
+      {featureTrack?.embedUrl && isPlaying && (
         <iframe
           title={featureTrack?.source === "youtube" ? "YouTube Hidden Player" : "Spotify Hidden Player"}
           src={featureTrack?.source === "youtube" ? `${featureTrack.embedUrl}?autoplay=1` : featureTrack.embedUrl}
@@ -382,8 +383,20 @@ export default function Home() {
               <button type="button" className="rounded-full p-2 transition hover:bg-white/10" aria-label="Previous track">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M6 5.25a.75.75 0 011.2-.6l8.5 6.75a.75.75 0 010 1.2L7.2 19.35A.75.75 0 016 18.75V5.25zm10 0a.75.75 0 111.5 0v13.5a.75.75 0 11-1.5 0V5.25z"/></svg>
               </button>
-              <button type="button" className="rounded-full bg-white p-2 text-black transition hover:scale-[1.03]" aria-label="Play in embedded player">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M8.5 6.5v11l9-5.5-9-5.5z"/></svg>
+              <button
+                type="button"
+                onClick={() => setIsPlaying((current) => !current)}
+                disabled={!featureTrack?.embedUrl}
+                className="rounded-full bg-white p-2 text-black transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label={isPlaying ? "Pause embedded player" : "Play in embedded player"}
+              >
+                {isPlaying ? (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+                    <path fill="currentColor" d="M7 5.75A.75.75 0 017.75 5h2.5a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 01-.75-.75V5.75zm6 0A.75.75 0 0113.75 5h2.5a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 01-.75-.75V5.75z"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M8.5 6.5v11l9-5.5-9-5.5z"/></svg>
+                )}
               </button>
               <button type="button" className="rounded-full p-2 transition hover:bg-white/10" aria-label="Next track">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M18 5.25a.75.75 0 00-1.2-.6l-8.5 6.75a.75.75 0 000 1.2l8.5 6.75a.75.75 0 001.2-.6V5.25zm-10 0a.75.75 0 10-1.5 0v13.5a.75.75 0 101.5 0V5.25z"/></svg>
