@@ -301,5 +301,30 @@ export function updateUserPassword(userId, passwordHash) {
   return { success: false, message: "Failed to update password" };
 }
 
+export function updateUserPreferences(userId, { genres, artist, language }) {
+  const db = readDb();
+  const userIndex = db.users.findIndex((user) => user.id === userId);
+
+  if (userIndex < 0) {
+    return { success: false, message: "User not found" };
+  }
+
+  db.users[userIndex] = {
+    ...db.users[userIndex],
+    preferences: {
+      genres,
+      artist,
+      language,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (writeDb(db)) {
+    return { success: true };
+  }
+
+  return { success: false, message: "Failed to update preferences" };
+}
+
 // Initialize on import
 initializeDb();
