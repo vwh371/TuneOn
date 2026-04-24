@@ -89,11 +89,11 @@ export default function Register() {
       // Store token and user info
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      setSuccess(`Welcome, ${data.user.name}! Redirecting...`);
+      setSuccess(`Welcome, ${data.user.name}! Setting up your preferences...`);
 
       // Redirect after success
       setTimeout(() => {
-        window.location.href = "/home";
+        window.location.href = "/music-preferences";
       }, 1500);
     } catch (err) {
       setError(err.message || "An error occurred during registration");

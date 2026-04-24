@@ -2,6 +2,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import Home from "./pages/home";
 import ResetPassword from "./pages/resetPassword";
+import MusicPreferences from "./pages/musicPreferences";
 
 export default function App() {
   const path = window.location.pathname;
@@ -9,6 +10,15 @@ export default function App() {
 
   if (path.startsWith("/home")) {
     return <Home />;
+  }
+
+  if (path.startsWith("/music-preferences")) {
+    if (!token) {
+      window.location.replace("/register");
+      return null;
+    }
+
+    return <MusicPreferences />;
   }
 
   if (path.startsWith("/register")) {

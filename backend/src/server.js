@@ -17,6 +17,7 @@ import {
   upsertAppleUser,
   savePasswordResetToken,
   updateUserPassword,
+  updateUserPreferences,
 } from "./db.js";
 import { hashPassword, comparePasswords, generateToken, authMiddleware } from "./auth.js";
 
@@ -418,6 +419,37 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Music preferences endpoint
+app.post("/api/auth/preferences", authMiddleware, async (req, res) => {
+  try {
+    const { genres, artist, language } = req.body;
+    const userId = req.user.id;
+
+    // Validation
+    if (!genres || !Array.isArray(genres) || genres.length !== 3) {
+      return res.status(400).json({ error: "Please select exactly 3 genres" });
+    }
+
+    if (!artist || !language) {
+      return res.status(400).json({ error: "Artist and language are required" });
+    }
+
+    const result = updateUserPreferences(userId, { genres, artist, language });
+
+    if (!result.success) {
+      return res.status(500).json({ error: result.message });
+    }
+
+    res.json({
+      message: "Preferences saved successfully",
+      preferences: { genres, artist, language },
+    });
+  } catch (error) {
+    console.error("Preferences error:", error);
+    res.status(500).json({ error: "Failed to save preferences" });
   }
 });
 
