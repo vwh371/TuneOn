@@ -11,6 +11,7 @@ import {
   getUserByEmail,
   getUserByAppleId,
   getUserByEmailOrGoogleId,
+  getUserById,
   getUserByPasswordResetTokenHash,
   createUser,
   upsertGoogleUser,
@@ -44,6 +45,8 @@ const smtpSecure = String(process.env.SMTP_SECURE || "false").toLowerCase() === 
 const smtpUser = process.env.SMTP_USER || "";
 const smtpPass = process.env.SMTP_PASS || "";
 const emailFrom = process.env.EMAIL_FROM || smtpUser || "no-reply@tuneon.local";
+const rawResetEmailMode = String(process.env.RESET_EMAIL_MODE || "auto").toLowerCase();
+const resetEmailMode = ["auto", "smtp", "log"].includes(rawResetEmailMode) ? rawResetEmailMode : "auto";
 let spotifyTokenCache = {
   accessToken: "",
   expiresAt: 0,
@@ -148,9 +151,11 @@ const recommendationReasons = {
   trending: "Trending on TuneOn this week",
 };
 
-function getRecommendations({ mood = "focus", genre = "", limit = 6 }) {
+function getRecommendations({ mood = "focus", genre = "", genres = [], artist = "", limit = 6 }) {
   const normalizedMood = String(mood).toLowerCase();
   const normalizedGenre = String(genre).toLowerCase();
+  const normalizedGenres = normalizePreferenceGenres(genres).map((item) => item.toLowerCase());
+  const normalizedArtist = String(artist || "").trim().toLowerCase();
   const safeLimit = Math.max(1, Math.min(Number(limit) || 6, 12));
 
   const scoredTracks = tracks.map((track) => {
@@ -165,6 +170,16 @@ function getRecommendations({ mood = "focus", genre = "", limit = 6 }) {
     if (normalizedGenre && track.genre.toLowerCase() === normalizedGenre) {
       score += 2;
       reasons.push(recommendationReasons.genre);
+    }
+
+    if (normalizedGenres.length > 0 && normalizedGenres.includes(track.genre.toLowerCase())) {
+      score += 3;
+      reasons.push("Matches your saved genre preference");
+    }
+
+    if (normalizedArtist && track.artist.toLowerCase().includes(normalizedArtist)) {
+      score += 3;
+      reasons.push("Matches your saved artist preference");
     }
 
     if (track.energy === "high") {
@@ -188,6 +203,45 @@ function getRecommendations({ mood = "focus", genre = "", limit = 6 }) {
   return scoredTracks
     .sort((a, b) => b.score - a.score || a.bpm - b.bpm)
     .slice(0, safeLimit);
+}
+
+function normalizePreferenceGenres(genres) {
+  if (!Array.isArray(genres)) {
+    return [];
+  }
+
+  return genres.map((genre) => String(genre || "").trim()).filter(Boolean);
+}
+
+function pickPrimaryGenre({ genre, genres = [] }) {
+  const normalizedGenre = String(genre || "").trim();
+  if (normalizedGenre) {
+    return normalizedGenre;
+  }
+
+  const list = normalizePreferenceGenres(genres);
+  return list[0] || "";
+}
+
+function buildArtistQuery(artist) {
+  const normalizedArtist = String(artist || "").trim();
+  if (!normalizedArtist) {
+    return "";
+  }
+
+  return normalizedArtist.replace(/"/g, "");
+}
+
+function getPreferenceSeed({ genre, genres = [], artist = "" }) {
+  const preferenceGenres = normalizePreferenceGenres(genres);
+  const primaryGenre = pickPrimaryGenre({ genre, genres: preferenceGenres });
+  const normalizedArtist = String(artist || "").trim();
+
+  return {
+    preferenceGenres,
+    primaryGenre,
+    artist: normalizedArtist,
+  };
 }
 
 async function getSpotifyAccessToken() {
@@ -327,6 +381,46 @@ function createMailTransporter() {
       pass: smtpPass,
     },
   });
+}
+
+function shouldUseSmtpForResetEmail() {
+  if (resetEmailMode === "smtp") {
+    return true;
+  }
+
+  if (resetEmailMode === "log") {
+    return false;
+  }
+
+  return Boolean(smtpHost && smtpUser && smtpPass);
+}
+
+async function sendPasswordResetEmail({ email, name, resetLink }) {
+  const text = `Hi ${name || "there"},\n\nWe received a password reset request for your TuneOn account.\n\nUse this link to set a new password:\n${resetLink}\n\nThis link expires in 30 minutes.\n\nIf you didn't request this, you can ignore this email.`;
+  const html = `<p>Hi ${name || "there"},</p><p>We received a password reset request for your TuneOn account.</p><p><a href="${resetLink}">Click here to set a new password</a></p><p>This link expires in 30 minutes.</p><p>If you didn't request this, you can ignore this email.</p>`;
+
+  if (shouldUseSmtpForResetEmail()) {
+    const transporter = createMailTransporter();
+
+    if (!transporter) {
+      throw new Error("SMTP credentials are incomplete. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and EMAIL_FROM.");
+    }
+
+    await transporter.sendMail({
+      from: emailFrom,
+      to: email,
+      subject: "TuneOn password reset",
+      text,
+      html,
+    });
+
+    return { delivery: "smtp" };
+  }
+
+  console.info("[password-reset] SMTP not configured. Using log mode for reset link:");
+  console.info(`[password-reset] user=${email} link=${resetLink}`);
+
+  return { delivery: "log" };
 }
 
 // Health check
@@ -644,14 +738,6 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       });
     }
 
-    const transporter = createMailTransporter();
-    if (!transporter) {
-      return res.status(500).json({
-        error:
-          "Password reset email is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and EMAIL_FROM in backend/.env.",
-      });
-    }
-
     const rawResetToken = generateResetToken();
     const tokenHash = hashResetToken(rawResetToken);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 30).toISOString();
@@ -663,12 +749,10 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 
     const resetLink = `${frontendBaseUrl}/reset-password?token=${encodeURIComponent(rawResetToken)}`;
 
-    await transporter.sendMail({
-      from: emailFrom,
-      to: user.email,
-      subject: "TuneOn password reset",
-      text: `Hi ${user.name || "there"},\n\nWe received a password reset request for your TuneOn account.\n\nUse this link to set a new password:\n${resetLink}\n\nThis link expires in 30 minutes.\n\nIf you didn't request this, you can ignore this email.`,
-      html: `<p>Hi ${user.name || "there"},</p><p>We received a password reset request for your TuneOn account.</p><p><a href="${resetLink}">Click here to set a new password</a></p><p>This link expires in 30 minutes.</p><p>If you didn't request this, you can ignore this email.</p>`,
+    await sendPasswordResetEmail({
+      email: user.email,
+      name: user.name,
+      resetLink,
     });
 
     res.json({ message: "If an account exists, a reset email has been sent." });
@@ -717,8 +801,25 @@ app.post("/api/auth/reset-password", async (req, res) => {
 
 // Protected route example - get current user
 app.get("/api/auth/me", authMiddleware, (req, res) => {
+  const user = getUserById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
   res.json({
-    user: req.user,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl || "",
+      authProvider: user.authProvider || "local",
+      preferences: user.preferences || {
+        genres: [],
+        artist: "",
+        language: "",
+      },
+    },
   });
 });
 
@@ -729,12 +830,29 @@ app.get("/api/tracks", (_req, res) => {
 
 // Personalized recommendations (public demo)
 app.get("/api/recommendations", (req, res) => {
-  const { mood, genre, limit } = req.query;
-  const recommendations = getRecommendations({ mood, genre, limit });
+  const { mood, genre, genres, artist, limit } = req.query;
+  const seed = getPreferenceSeed({
+    genre,
+    genres: String(genres || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    artist,
+  });
+
+  const recommendations = getRecommendations({
+    mood,
+    genre: seed.primaryGenre,
+    genres: seed.preferenceGenres,
+    artist: seed.artist,
+    limit,
+  });
 
   res.json({
     selectedMood: mood || "focus",
-    selectedGenre: genre || "any",
+    selectedGenre: seed.primaryGenre || genre || "any",
+    selectedGenres: seed.preferenceGenres,
+    selectedArtist: seed.artist,
     recommendations,
   });
 });
@@ -742,12 +860,20 @@ app.get("/api/recommendations", (req, res) => {
 app.get("/api/spotify/recommendations", async (req, res) => {
   try {
     const mood = String(req.query.mood || "focus").toLowerCase();
-    const genre = String(req.query.genre || "").trim();
+    const seed = getPreferenceSeed({
+      genre: req.query.genre,
+      genres: String(req.query.genres || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      artist: req.query.artist,
+    });
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 20));
 
     const moodQuery = moodToSpotifyQuery(mood);
-    const genreQuery = genre ? ` genre:${genre}` : "";
-    const searchQuery = `${moodQuery}${genreQuery}`;
+    const genreQuery = seed.primaryGenre ? ` genre:${seed.primaryGenre}` : "";
+    const artistQuery = seed.artist ? ` artist:"${buildArtistQuery(seed.artist)}"` : "";
+    const searchQuery = `${moodQuery}${genreQuery}${artistQuery}`.trim();
 
     const token = await getSpotifyAccessToken();
     const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&market=US&limit=${limit}`;
@@ -768,7 +894,9 @@ app.get("/api/spotify/recommendations", async (req, res) => {
     res.json({
       source: "spotify",
       selectedMood: mood,
-      selectedGenre: genre || "any",
+      selectedGenre: seed.primaryGenre || "any",
+      selectedGenres: seed.preferenceGenres,
+      selectedArtist: seed.artist,
       recommendations,
     });
   } catch (error) {
@@ -787,11 +915,19 @@ app.get("/api/youtube/recommendations", async (req, res) => {
     }
 
     const mood = String(req.query.mood || "focus").toLowerCase();
-    const genre = String(req.query.genre || "").trim();
+    const seed = getPreferenceSeed({
+      genre: req.query.genre,
+      genres: String(req.query.genres || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+      artist: req.query.artist,
+    });
     const limit = Math.max(1, Math.min(Number(req.query.limit) || 8, 20));
 
     const baseQuery = moodToYouTubeQuery(mood);
-    const searchQuery = genre ? `${baseQuery} ${genre} music` : baseQuery;
+    const searchParts = [seed.artist, seed.primaryGenre, baseQuery, "music"].filter(Boolean);
+    const searchQuery = searchParts.join(" ");
 
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoCategoryId=10&maxResults=${limit}&q=${encodeURIComponent(searchQuery)}&key=${youtubeApiKey}`;
 
@@ -807,7 +943,9 @@ app.get("/api/youtube/recommendations", async (req, res) => {
     res.json({
       source: "youtube",
       selectedMood: mood,
-      selectedGenre: genre || "any",
+      selectedGenre: seed.primaryGenre || "any",
+      selectedGenres: seed.preferenceGenres,
+      selectedArtist: seed.artist,
       recommendations,
     });
   } catch (error) {

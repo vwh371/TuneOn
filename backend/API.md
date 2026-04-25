@@ -188,6 +188,11 @@ Response:
 }
 ```
 
+Environment flags for delivery behavior:
+- `RESET_EMAIL_MODE=auto`: use SMTP when credentials exist, otherwise log reset links on the backend.
+- `RESET_EMAIL_MODE=smtp`: require SMTP and send real email.
+- `RESET_EMAIL_MODE=log`: never send email, always log reset links (local development).
+
 #### Reset Password
 ```
 POST /api/auth/reset-password

@@ -36,6 +36,23 @@ export default function MusicPreferences() {
     "Hindi",
   ];
 
+  const genreArtistMap = {
+    Pop: ["Taylor Swift", "Ariana Grande", "Dua Lipa", "The Weeknd"],
+    Rock: ["Imagine Dragons", "Foo Fighters", "Arctic Monkeys", "Coldplay"],
+    "Hip-Hop": ["Drake", "Kendrick Lamar", "Travis Scott", "Nicki Minaj"],
+    Jazz: ["Miles Davis", "Billie Holiday", "Herbie Hancock", "Esperanza Spalding"],
+    Classical: ["Ludovico Einaudi", "Yo-Yo Ma", "Lang Lang", "Hans Zimmer"],
+    Electronic: ["Calvin Harris", "Daft Punk", "Zedd", "Skrillex"],
+    "R&B": ["SZA", "Bruno Mars", "H.E.R.", "Alicia Keys"],
+    Country: ["Taylor Swift", "Luke Combs", "Kacey Musgraves", "Morgan Wallen"],
+    Reggae: ["Bob Marley", "Damian Marley", "Chronixx", "Toots and the Maytals"],
+    Latin: ["Bad Bunny", "Shakira", "J Balvin", "Karol G"],
+  };
+
+  const suggestedArtists = Array.from(
+    new Set(formData.genres.flatMap((genre) => genreArtistMap[genre] || [])),
+  ).slice(0, 8);
+
   const handleGenreToggle = (genre) => {
     setFormData((current) => {
       const isSelected = current.genres.includes(genre);
@@ -118,7 +135,7 @@ export default function MusicPreferences() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Welcome to TuneOn</h1>
@@ -174,6 +191,36 @@ export default function MusicPreferences() {
             />
           </div>
 
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <label className="block text-white font-semibold">Suggested Artists</label>
+              <span className="text-xs uppercase tracking-[0.24em] text-gray-400">Based on selected genres</span>
+            </div>
+
+            {suggestedArtists.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {suggestedArtists.map((artist) => (
+                  <button
+                    key={artist}
+                    type="button"
+                    onClick={() => setFormData((current) => ({ ...current, artist }))}
+                    className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                      formData.artist === artist
+                        ? "border-blue-400 bg-blue-500/20 text-blue-100"
+                        : "border-white/15 bg-white/5 text-gray-200 hover:border-white/35 hover:bg-white/10"
+                    }`}
+                  >
+                    {artist}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-dashed border-white/15 bg-white/5 px-4 py-3 text-sm text-gray-400">
+                Pick up to 3 genres first to see matching artist suggestions.
+              </p>
+            )}
+          </div>
+
           {/* Language Select */}
           <div>
             <label htmlFor="language" className="block text-white font-semibold mb-3">
@@ -199,7 +246,7 @@ export default function MusicPreferences() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition transform hover:scale-105"
+            className="w-full py-3 px-4 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition transform hover:scale-105"
           >
             {isLoading ? "Saving..." : "Continue"}
           </button>

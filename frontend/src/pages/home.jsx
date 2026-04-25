@@ -10,10 +10,17 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [status, setStatus] = useState("loading");
   const [suggestStatus, setSuggestStatus] = useState("loading");
+  const [profileStatus, setProfileStatus] = useState("loading");
+  const [recommendationLimit, setRecommendationLimit] = useState(8);
   const [error, setError] = useState("");
   const [sourceLabel, setSourceLabel] = useState("TuneOn");
   const [activeMood, setActiveMood] = useState("focus");
   const [activeGenre, setActiveGenre] = useState("");
+  const [userPreferences, setUserPreferences] = useState({
+    genres: [],
+    artist: "",
+    language: "",
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [searchStatus, setSearchStatus] = useState("idle");
   const [searchError, setSearchError] = useState("");
@@ -38,6 +45,11 @@ export default function Home() {
   }, []);
 
   const greetingName = user?.name || "Listener";
+
+  const handleMoodChange = (mood) => {
+    setRecommendationLimit(8);
+    setActiveMood(mood);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -79,6 +91,50 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadProfile() {
+      setProfileStatus("loading");
+
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load profile");
+        }
+
+        const preferences = data.user?.preferences || { genres: [], artist: "", language: "" };
+        setUserPreferences(preferences);
+        setActiveGenre((current) => current || preferences.genres?.[0] || "");
+        setProfileStatus("ready");
+      } catch (err) {
+        if (err.name === "AbortError") {
+          return;
+        }
+
+        setProfileStatus("error");
+      }
+    }
+
+    loadProfile();
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function loadRecommendations() {
@@ -86,13 +142,26 @@ export default function Home() {
       setError("");
 
       try {
+        const preferredGenre = activeGenre || userPreferences.genres?.[0] || "";
         const params = new URLSearchParams({
           mood: activeMood,
-          limit: "8",
+          limit: String(recommendationLimit),
         });
 
-        if (activeGenre) {
-          params.set("genre", activeGenre);
+        if (preferredGenre) {
+          params.set("genre", preferredGenre);
+        }
+
+        if (userPreferences.genres?.length > 0) {
+          params.set("genres", userPreferences.genres.join(","));
+        }
+
+        if (userPreferences.artist) {
+          params.set("artist", userPreferences.artist);
+        }
+
+        if (userPreferences.language) {
+          params.set("language", userPreferences.language);
         }
 
         const externalSources = [
@@ -157,7 +226,7 @@ export default function Home() {
     loadRecommendations();
 
     return () => controller.abort();
-  }, [activeMood, activeGenre]);
+  }, [activeMood, activeGenre, userPreferences, recommendationLimit]);
 
   const featureTrack = selectedTrack;
 
@@ -175,6 +244,9 @@ export default function Home() {
     return list.slice(0, 5);
   }, [tracks]);
 
+  const preferenceGenres = userPreferences.genres?.filter(Boolean) || [];
+  const displayedGenres = preferenceGenres.length > 0 ? preferenceGenres : topGenres;
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -182,7 +254,12 @@ export default function Home() {
   };
 
   const handleGenreClick = (genre) => {
+    setRecommendationLimit(8);
     setActiveGenre((current) => (current === genre ? "" : genre));
+  };
+
+  const handleShowMore = () => {
+    setRecommendationLimit((current) => Math.min(current + 4, 20));
   };
 
   const handleSearchSubmit = async (event) => {
@@ -236,7 +313,7 @@ export default function Home() {
             greetingName={greetingName}
             moods={moods}
             activeMood={activeMood}
-            onMoodChange={setActiveMood}
+            onMoodChange={handleMoodChange}
             onLogout={handleLogout}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
@@ -251,9 +328,6 @@ export default function Home() {
                 <h2 className="text-2xl font-bold tracking-tight">Made for you</h2>
                 <p className="mt-1 text-sm text-white/65">Suggestion engine: mood + genre + YouTube + Spotify discovery</p>
               </div>
-              <span className="rounded-full border border-cyan-300/35 bg-cyan-300/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100">
-                {activeMood} mode
-              </span>
             </div>
 
             <p className="mt-3 text-xs uppercase tracking-[0.22em] text-white/50">Source: {sourceLabel}</p>
@@ -262,9 +336,9 @@ export default function Home() {
               <p className="mt-4 rounded-2xl border border-red-400/35 bg-red-900/20 px-4 py-3 text-sm text-red-200">{searchError}</p>
             )}
 
-            {topGenres.length > 0 && (
+            {displayedGenres.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-2">
-                {topGenres.map((genre) => (
+                {displayedGenres.map((genre) => (
                   <button
                     key={genre}
                     type="button"
@@ -281,6 +355,14 @@ export default function Home() {
               </div>
             )}
 
+            {profileStatus === "ready" && (userPreferences.artist || userPreferences.language) && (
+              <p className="mt-4 text-xs uppercase tracking-[0.22em] text-[#8ef2b1]">
+                Personalized with {userPreferences.artist ? `artist: ${userPreferences.artist}` : "your favorite genre"}
+                {userPreferences.artist && userPreferences.language ? " · " : ""}
+                {userPreferences.language ? `language: ${userPreferences.language}` : ""}
+              </p>
+            )}
+
             {suggestStatus === "loading" && (
               <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/75">Building personalized suggestions...</p>
             )}
@@ -290,15 +372,14 @@ export default function Home() {
             )}
 
             {suggestStatus === "ready" && recommendations.length > 0 && (
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="mt-6 space-y-3">
                 {recommendations.map((track) => (
-                  <div
+                  <button
                     key={track.id}
-                    className={`group rounded-2xl border bg-white/6 p-4 transition hover:-translate-y-0.5 hover:border-[#1db954]/45 hover:bg-white/10 ${
-                      selectedTrack?.id === track.id ? "border-[#1db954]/50" : "border-white/10"
+                    type="button"
+                    className={`group flex w-full items-center gap-4 rounded-3xl border bg-white/6 p-3 text-left transition hover:-translate-y-0.5 hover:border-[#1db954]/45 hover:bg-white/10 ${
+                      selectedTrack?.id === track.id ? "border-[#1db954]/55" : "border-white/10"
                     }`}
-                    role="button"
-                    tabIndex={0}
                     onClick={() => handleTrackSelect(track, true)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
@@ -306,16 +387,50 @@ export default function Home() {
                       }
                     }}
                   >
-                    <p className="text-xs uppercase tracking-[0.28em] text-white/45">{track.genre}</p>
-                    <h3 className="mt-2 text-lg font-bold">{track.title}</h3>
-                    <p className="mt-1 text-sm text-white/70">{track.artist}</p>
-                    <div className="mt-4 flex items-center justify-between text-xs text-white/65">
-                      <span>{track.bpm ? `${track.bpm} BPM` : track.album || "Playlist pick"}</span>
-                      <span className="rounded-full border border-white/15 bg-white/8 px-2 py-1">{track.energy || "smart match"}</span>
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-white/8 sm:h-24 sm:w-24">
+                      {track.cover ? (
+                        <img
+                          src={track.cover}
+                          alt={track.title}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#1db954]/35 via-emerald-500/20 to-cyan-500/20 text-xs font-semibold uppercase tracking-[0.22em] text-white/65">
+                          No art
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-3 text-xs text-[#8ef2b1]">{track.reason}</p>
-                  </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs uppercase tracking-[0.28em] text-white/45">{track.genre}</p>
+                        <span className="rounded-full border border-white/15 bg-white/8 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/65">
+                          {track.source || sourceLabel}
+                        </span>
+                      </div>
+                      <h3 className="mt-2 truncate text-lg font-bold text-white sm:text-xl">{track.title}</h3>
+                      <p className="mt-1 truncate text-sm text-white/70">{track.artist}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/65">
+                        <span>{track.bpm ? `${track.bpm} BPM` : track.album || "Playlist pick"}</span>
+                        <span className="rounded-full border border-white/15 bg-white/8 px-2 py-1">{track.energy || "smart match"}</span>
+                      </div>
+                      <p className="mt-3 line-clamp-2 text-sm text-[#8ef2b1]">{track.reason}</p>
+                    </div>
+                  </button>
                 ))}
+
+                {recommendationLimit < 20 && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleShowMore}
+                      disabled={suggestStatus === "loading"}
+                      className="flex w-full items-center justify-center rounded-3xl border border-white/12 bg-white/6 px-4 py-4 text-sm font-semibold text-white/85 transition hover:border-[#1db954]/45 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {suggestStatus === "loading" ? "Loading more music..." : "Show more music"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </article>

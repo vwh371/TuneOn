@@ -1,10 +1,5 @@
-const moodLabel = (value) => value.charAt(0).toUpperCase() + value.slice(1);
-
 export default function Header({
   greetingName,
-  moods,
-  activeMood,
-  onMoodChange,
   onLogout,
   searchQuery,
   onSearchQueryChange,
@@ -61,21 +56,6 @@ export default function Header({
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        {moods.map((mood) => (
-          <button
-            key={mood}
-            type="button"
-            onClick={() => onMoodChange(mood)}
-            className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
-              activeMood === mood
-                ? "border-white/30 bg-white/18 text-white"
-                : "border-white/12 bg-white/5 text-white/78 hover:bg-white/12"
-            }`}
-          >
-            {moodLabel(mood)}
-          </button>
-        ))}
-
         <button
           type="button"
           onClick={onLogout}
