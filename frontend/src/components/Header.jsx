@@ -1,6 +1,4 @@
 export default function Header({
-  greetingName,
-  onLogout,
   searchQuery,
   onSearchQueryChange,
   onSearchSubmit,
@@ -8,7 +6,14 @@ export default function Header({
 }) {
   return (
     <header className="rounded-4xl border border-white/12 bg-black/35 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 text-white">
+          <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-linear-to-br from-emerald-400/90 to-cyan-300/80 text-[11px] font-black tracking-wide text-black">
+            TO
+          </div>
+          <span className="text-lg font-bold tracking-tight">TuneOn</span>
+        </div>
+
         <form onSubmit={onSearchSubmit} className="relative min-w-55 flex-1">
           <svg
             viewBox="0 0 24 24"
@@ -39,29 +44,15 @@ export default function Header({
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white/7 text-white/80 transition hover:bg-white/15"
-          aria-label="Open devices"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/18 bg-white/7 text-white/80 transition hover:bg-white/15"
+          aria-label="Open profile"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
             <path
               fill="currentColor"
-              d="M3 6a3 3 0 013-3h12a3 3 0 013 3v7.5a3 3 0 01-3 3h-1.5a.75.75 0 010-1.5H18a1.5 1.5 0 001.5-1.5V6A1.5 1.5 0 0018 4.5H6A1.5 1.5 0 004.5 6v7.5A1.5 1.5 0 006 15h1.5a.75.75 0 010 1.5H6a3 3 0 01-3-3V6zm9 13.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zm0 1.5a3.75 3.75 0 110-7.5 3.75 3.75 0 010 7.5z"
+              d="M12 2.5a6 6 0 014.12 10.36A8.5 8.5 0 0119.5 20a.75.75 0 01-1.5 0 7 7 0 00-14 0 .75.75 0 01-1.5 0 8.5 8.5 0 013.38-7.14A6 6 0 0112 2.5zm0 1.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
             />
           </svg>
-        </button>
-
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-linear-to-br from-white/35 to-white/8 text-sm font-bold text-white/90">
-          {greetingName?.charAt(0)?.toUpperCase() || "U"}
-        </div>
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onLogout}
-          className="ml-auto rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20"
-        >
-          Log out
         </button>
       </div>
     </header>

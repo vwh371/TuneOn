@@ -1,8 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
-import Sidebar from "../components/Sidebar";
 
 const moods = ["focus", "chill", "workout", "party", "night", "study"];
+
+function prioritizeRecommendations(list, preferredGenres = [], activeGenre = "") {
+  const priorityGenres = new Set(
+    [...preferredGenres, activeGenre].map((genre) => String(genre || "").trim().toLowerCase()).filter(Boolean),
+  );
+
+  return [...list]
+    .map((track) => {
+      const trackGenre = String(track.genre || "").trim().toLowerCase();
+      return {
+        ...track,
+        __priority: priorityGenres.has(trackGenre) ? 1 : 0,
+        __random: Math.random(),
+      };
+    })
+    .sort((a, b) => b.__priority - a.__priority || a.__random - b.__random)
+    .map(({ __priority, __random, ...track }) => track);
+}
+
+async function readResponseJson(response) {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
 
 export default function Home() {
   const [tracks, setTracks] = useState([]);
@@ -25,10 +56,35 @@ export default function Home() {
   const [searchStatus, setSearchStatus] = useState("idle");
   const [searchError, setSearchError] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showHomePlayer, setShowHomePlayer] = useState(false);
+
+  const navigateTo = (path) => {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new Event("app:navigate"));
+  };
+
+  const savePlayerState = (track, playing, showPopup) => {
+    sessionStorage.setItem(
+      "playerState",
+      JSON.stringify({
+        track,
+        isPlaying: Boolean(playing),
+        showPopup: Boolean(showPopup),
+      }),
+    );
+    window.dispatchEvent(new Event("player-state-changed"));
+  };
 
   const handleTrackSelect = (track, autoPlay = false) => {
     setSelectedTrack(track);
-    setIsPlaying(autoPlay && Boolean(track?.embedUrl));
+    const shouldPlay = autoPlay && Boolean(track?.embedUrl);
+    setIsPlaying(shouldPlay);
+    setShowHomePlayer(false);
+
+    // Store track and player state before navigating to detail page.
+    sessionStorage.setItem("selectedTrack", JSON.stringify(track));
+    savePlayerState(track, shouldPlay, false);
+    navigateTo("/song");
   };
   const user = useMemo(() => {
     const stored = localStorage.getItem("user");
@@ -52,6 +108,30 @@ export default function Home() {
   };
 
   useEffect(() => {
+    const savedTrack = sessionStorage.getItem("selectedTrack");
+    const savedPlayerState = sessionStorage.getItem("playerState");
+
+    if (savedTrack) {
+      try {
+        setSelectedTrack(JSON.parse(savedTrack));
+      } catch {
+        setSelectedTrack(null);
+      }
+    }
+
+    if (savedPlayerState) {
+      try {
+        const parsed = JSON.parse(savedPlayerState);
+        setIsPlaying(Boolean(parsed?.isPlaying));
+        setShowHomePlayer(Boolean(parsed?.showPopup));
+      } catch {
+        setIsPlaying(false);
+        setShowHomePlayer(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -67,7 +147,7 @@ export default function Home() {
 
       try {
         const response = await fetch("/api/tracks", { signal: controller.signal });
-        const data = await response.json();
+        const data = await readResponseJson(response);
 
         if (!response.ok) {
           throw new Error(data.error || "Could not load tracks");
@@ -110,7 +190,7 @@ export default function Home() {
           signal: controller.signal,
         });
 
-        const data = await response.json();
+        const data = await readResponseJson(response);
 
         if (!response.ok) {
           throw new Error(data.error || "Could not load profile");
@@ -140,6 +220,7 @@ export default function Home() {
     async function loadRecommendations() {
       setSuggestStatus("loading");
       setError("");
+      setSearchStatus("idle");
 
       try {
         const preferredGenre = activeGenre || userPreferences.genres?.[0] || "";
@@ -178,7 +259,7 @@ export default function Home() {
             continue;
           }
 
-          const data = await response.json();
+          const data = await readResponseJson(response);
           const list = data.recommendations || [];
 
           if (list.length === 0) {
@@ -194,7 +275,7 @@ export default function Home() {
         const fallbackResponse = await fetch(`/api/recommendations?${params.toString()}`, {
           signal: controller.signal,
         });
-        const fallbackData = await fallbackResponse.json();
+        const fallbackData = await readResponseJson(fallbackResponse);
 
         if (!fallbackResponse.ok) {
           throw new Error(fallbackData.error || "Could not load recommendations");
@@ -245,7 +326,28 @@ export default function Home() {
   }, [tracks]);
 
   const preferenceGenres = userPreferences.genres?.filter(Boolean) || [];
-  const displayedGenres = preferenceGenres.length > 0 ? preferenceGenres : topGenres;
+  const displayedGenres = useMemo(() => {
+    const seen = new Set();
+    const combined = [...preferenceGenres, ...topGenres, ...tracks.map((track) => track.genre).filter(Boolean)];
+
+    return combined.filter((genre) => {
+      const key = String(genre).trim().toLowerCase();
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    }).slice(0, 10);
+  }, [preferenceGenres, topGenres, tracks]);
+
+  const visibleRecommendations = useMemo(() => {
+    if (searchStatus === "ready") {
+      return recommendations;
+    }
+
+    return prioritizeRecommendations(recommendations, preferenceGenres, activeGenre);
+  }, [activeGenre, preferenceGenres, recommendations, searchStatus]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -276,7 +378,7 @@ export default function Home() {
     try {
       const params = new URLSearchParams({ q: query, limit: "8" });
       const response = await fetch(`/api/youtube/search?${params.toString()}`);
-      const data = await response.json();
+      const data = await readResponseJson(response);
 
       if (!response.ok) {
         throw new Error(data.error || "Could not search songs");
@@ -298,17 +400,9 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_15%,rgba(29,185,84,0.24),transparent_35%),radial-gradient(circle_at_90%_5%,rgba(59,130,246,0.2),transparent_28%),radial-gradient(circle_at_50%_120%,rgba(234,179,8,0.15),transparent_32%),linear-gradient(155deg,#040b08_0%,#091914_45%,#070f1a_100%)] px-4 py-8 pb-28 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row">
-        <Sidebar />
-
+    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_10%_15%,rgba(29,185,84,0.24),transparent_35%),radial-gradient(circle_at_90%_5%,rgba(59,130,246,0.2),transparent_28%),radial-gradient(circle_at_50%_120%,rgba(234,179,8,0.15),transparent_32%),linear-gradient(155deg,#040b08_0%,#091914_45%,#070f1a_100%)] px-4 py-8 pb-28 text-white sm:px-6 lg:px-8 ml-20">
+      <div className="mx-auto max-w-7xl flex-col gap-6">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold uppercase tracking-[0.38em] text-[#1db954]">TuneOn</p>
-          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Good evening, {greetingName}.</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/70 sm:text-base">
-            Your home feed adapts to mood and taste, so each refresh feels like a custom mix made for you.
-          </p>
-
           <Header
             greetingName={greetingName}
             moods={moods}
@@ -371,9 +465,9 @@ export default function Home() {
               <p className="mt-6 rounded-2xl border border-red-400/35 bg-red-900/20 px-4 py-4 text-sm text-red-200">{error}</p>
             )}
 
-            {suggestStatus === "ready" && recommendations.length > 0 && (
+            {suggestStatus === "ready" && visibleRecommendations.length > 0 && (
               <div className="mt-6 space-y-3">
-                {recommendations.map((track) => (
+                {visibleRecommendations.map((track) => (
                   <button
                     key={track.id}
                     type="button"
@@ -469,17 +563,7 @@ export default function Home() {
         </div>
       </div>
 
-      {featureTrack?.embedUrl && isPlaying && (
-        <iframe
-          title={featureTrack?.source === "youtube" ? "YouTube Hidden Player" : "Spotify Hidden Player"}
-          src={featureTrack?.source === "youtube" ? `${featureTrack.embedUrl}?autoplay=1` : featureTrack.embedUrl}
-          className="h-0 w-0 border-0 opacity-0"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        />
-      )}
-
-      {featureTrack && (
+      {featureTrack && showHomePlayer && (
         <div className="fixed bottom-3 left-1/2 z-30 w-[min(1200px,calc(100%-1.5rem))] -translate-x-1/2 rounded-2xl border border-white/15 bg-[#1a1c1f]/96 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:px-5">
           <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_auto]">
             <div className="flex min-w-0 items-center gap-3">
@@ -500,7 +584,13 @@ export default function Home() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsPlaying((current) => !current)}
+                onClick={() => {
+                  setIsPlaying((current) => {
+                    const next = !current;
+                    savePlayerState(featureTrack, next, true);
+                    return next;
+                  });
+                }}
                 disabled={!featureTrack?.embedUrl}
                 className="rounded-full bg-white p-2 text-black transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label={isPlaying ? "Pause embedded player" : "Play in embedded player"}
