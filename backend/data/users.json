@@ -5,7 +5,10 @@
       "name": "Alex Johnson",
       "email": "alex@tuneon.com",
       "passwordHash": "$2a$10$N9qo8uLOickgx2ZMRZoXe.FKLv2DV6rXmEAI0H4.xBF5BYqPx4F8K",
-      "createdAt": "2026-04-17T16:54:54.190Z"
+      "createdAt": "2026-04-17T16:54:54.190Z",
+      "resetPasswordTokenHash": "7c59af0bb8012fdcfb28b0c0ea5cd112f20d4369554913a2bb5a7a1b4424746c",
+      "resetPasswordExpiresAt": "2026-04-25T14:41:00.968Z",
+      "updatedAt": "2026-04-25T14:11:00.968Z"
     },
     {
       "id": "1776445200933",
@@ -20,6 +23,69 @@
       "email": "sad@gmail.com",
       "passwordHash": "$2b$10$9AWiRRQappJNHP81ryA87usvxHKNZNszvLytq4NleqQbgV8E1wuHC",
       "createdAt": "2026-04-19T13:08:31.144Z"
+    },
+    {
+      "id": "1776934940334",
+      "name": "sadika371",
+      "email": "sadikaarjun55@gmail.com",
+      "passwordHash": "$2b$10$eR4SfsPr76kpOrelzDvxlO9b2CQfnVJa0mhO3AUcFSZtbboHYXvVm",
+      "authProvider": "local",
+      "createdAt": "2026-04-23T09:02:20.334Z",
+      "resetPasswordTokenHash": "466100b4fd91377ed044301d24b1a1845cfda5faa912a6432321fe6c0be96a1d",
+      "resetPasswordExpiresAt": "2026-04-25T14:41:27.240Z",
+      "updatedAt": "2026-04-25T14:11:27.242Z"
+    },
+    {
+      "id": "1777042962369",
+      "name": "arjun",
+      "email": "arjun7579@gmail.com",
+      "passwordHash": "$2b$10$tmX1.hPBXnaeccC0.LQNIO36SiFkVm8pWQvOu8g8MNrg/gEllvCtS",
+      "authProvider": "local",
+      "createdAt": "2026-04-24T15:02:42.370Z"
+    },
+    {
+      "id": "1777126602078",
+      "name": "Pref Test",
+      "email": "pref-test@example.com",
+      "passwordHash": "$2b$10$GCJs5jeM5akxv6S2oJ72ouFwZYJe1HYbU.331Y0ljTLRHM20BX7Je",
+      "authProvider": "local",
+      "createdAt": "2026-04-25T14:16:42.078Z",
+      "preferences": {
+        "genres": [
+          "Pop",
+          "Electronic",
+          "Jazz"
+        ],
+        "artist": "Adele",
+        "language": "English"
+      },
+      "updatedAt": "2026-04-25T14:16:42.104Z"
+    },
+    {
+      "id": "1777126675728",
+      "name": "jon",
+      "email": "jonadd@gmail.com",
+      "passwordHash": "$2b$10$PgssUKSEb8P4TDip63jTs.jxrQHXI1FTjX/cCAzx0yBc.Ba1GVtDG",
+      "authProvider": "local",
+      "createdAt": "2026-04-25T14:17:55.728Z",
+      "preferences": {
+        "genres": [
+          "Hip-Hop",
+          "Classical",
+          "R&B"
+        ],
+        "artist": "juice wrld",
+        "language": "English"
+      },
+      "updatedAt": "2026-04-25T14:18:20.583Z"
+    },
+    {
+      "id": "1777346336065",
+      "name": "Test User",
+      "email": "testuser@tuneon.com",
+      "passwordHash": "$2b$10$KYLl.GoCuXxbZGux8ZdTie0EEZzfy5HC5N8931KsnGvg.qV0T7kJC",
+      "authProvider": "local",
+      "createdAt": "2026-04-28T03:18:56.065Z"
     }
   ]
 }

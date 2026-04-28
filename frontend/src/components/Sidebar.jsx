@@ -64,73 +64,48 @@ function MenuIcon({ type }) {
 
 export default function Sidebar() {
   return (
-    // Main sidebar container.
-    <aside className="w-full shrink-0 rounded-4xl border border-white/12 bg-black/65 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl lg:sticky lg:top-8 lg:h-[calc(100vh-4rem)] lg:w-62.5 lg:overflow-hidden">
-      {/* Sidebar header: menu toggle + TuneOn logo */}
-      <div className="flex items-center justify-between">
-        {/* Sidebar menu button */}
-        <button
-          type="button"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/12 bg-white/5 text-white/85 transition hover:bg-white/12"
-          aria-label="Open menu"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-            <path fill="currentColor" d="M4 6.25a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H4.75A.75.75 0 014 6.25zm0 5.75a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H4.75A.75.75 0 014 12zm0 5.75a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H4.75a.75.75 0 01-.75-.75z" />
-          </svg>
-        </button>
-
-        {/* TuneOn brand lockup */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-linear-to-br from-emerald-400/90 to-cyan-300/80 text-[11px] font-black tracking-wide text-black">
-            TO
-          </div>
-          <span className="text-lg font-bold tracking-tight text-white">TuneOn</span>
+    // Main sidebar container - now narrow and icon-only
+    <aside className="fixed left-0 top-0 z-50 h-full w-20 shrink-0 border-r border-white/12 bg-black/80 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl overflow-y-auto">
+      {/* Sidebar header: TuneOn logo */}
+      <div className="flex items-center justify-center py-4">
+        {/* TuneOn brand lockup - logo only */}
+        <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-linear-to-br from-emerald-400/90 to-cyan-300/80 text-xs font-black tracking-wide text-black">
+          TO
         </div>
       </div>
 
-      {/* Primary navigation links */}
-      <nav className="mt-7 grid gap-1.5">
+      {/* Primary navigation links - icons only */}
+      <nav className="grid gap-1 px-2">
         {/* Render each navigation item */}
         {menuItems.map((item) => (
           <button
             key={item.key}
             type="button"
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-semibold transition ${
+            className={`flex items-center justify-center rounded-lg p-3 transition ${
               item.active
                 ? "bg-white/12 text-white"
-                : "text-white/75 hover:bg-white/10 hover:text-white"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
             }`}
+            title={item.label}
           >
             <span className="text-white/88">
               <MenuIcon type={item.key} />
             </span>
-            <span>{item.label}</span>
           </button>
         ))}
       </nav>
 
       {/* Visual divider between nav and actions */}
-      <div className="mt-5 h-px bg-white/10" />
+      <div className="mx-2 my-3 h-px bg-white/10" />
 
-      {/* Playlist quick action */}
+      {/* Playlist quick action - icon only */}
       <button
         type="button"
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/16"
+        className="mx-2 w-14 flex items-center justify-center rounded-lg border border-white/12 bg-white/8 p-3 text-lg font-semibold text-white transition hover:bg-white/16"
+        title="New playlist"
       >
-        <span className="text-lg leading-none">+</span>
-        <span>New playlist</span>
+        <span>+</span>
       </button>
-
-      {/* Sidebar playlist/library preview */}
-      <div className="mt-6 space-y-4">
-        {/* Render each playlist/library row */}
-        {playlistItems.map((item) => (
-          <div key={item.title}>
-            <p className="text-[28px] font-black leading-none tracking-tight text-white">{item.title}</p>
-            <p className="mt-0.5 text-sm text-white/60">{item.subtitle}</p>
-          </div>
-        ))}
-      </div>
     </aside>
   );
 }
