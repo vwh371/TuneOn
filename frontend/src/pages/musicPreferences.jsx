@@ -162,7 +162,34 @@ export default function MusicPreferences() {
                 <button
                   key={genre}
                   type="button"
-                  onClick={() => handleGenreToggle(genre)}
+                  onClick={() => {
+                    // If the user clicks "Pop", open the song detail page and start playback continuously
+                    if (genre === "Pop") {
+                      const sampleTrack = {
+                        title: "Pop Hit",
+                        artist: "Various Artists",
+                        cover: "https://via.placeholder.com/300?text=Pop+Hit",
+                        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+                        embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                        genre: "Pop",
+                        album: "Pop Collection",
+                        duration: "3:30",
+                        releaseDate: "2023",
+                        source: "youtube",
+                      };
+
+                      sessionStorage.setItem("selectedTrack", JSON.stringify(sampleTrack));
+                      sessionStorage.setItem(
+                        "playerState",
+                        JSON.stringify({ track: sampleTrack, isPlaying: true })
+                      );
+                      // navigate to song detail route
+                      window.location.href = "/song";
+                      return;
+                    }
+
+                    handleGenreToggle(genre);
+                  }}
                   className={`px-4 py-2 rounded-lg font-medium transition ${
                     formData.genres.includes(genre)
                       ? "bg-blue-500 text-white border-2 border-blue-400"

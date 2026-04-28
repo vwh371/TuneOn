@@ -52,6 +52,8 @@ let spotifyTokenCache = {
   expiresAt: 0,
 };
 
+const demoAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3";
+
 const tracks = [
   {
     id: 1,
@@ -61,6 +63,8 @@ const tracks = [
     bpm: 110,
     energy: "medium",
     moods: ["focus", "night", "chill"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 2,
@@ -70,6 +74,8 @@ const tracks = [
     bpm: 96,
     energy: "low",
     moods: ["chill", "study", "focus"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 3,
@@ -79,6 +85,8 @@ const tracks = [
     bpm: 126,
     energy: "high",
     moods: ["party", "workout", "night"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 4,
@@ -88,6 +96,8 @@ const tracks = [
     bpm: 128,
     energy: "high",
     moods: ["workout", "party"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 5,
@@ -97,6 +107,8 @@ const tracks = [
     bpm: 88,
     energy: "low",
     moods: ["chill", "night"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 6,
@@ -106,6 +118,8 @@ const tracks = [
     bpm: 80,
     energy: "low",
     moods: ["study", "focus", "chill"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 7,
@@ -115,6 +129,8 @@ const tracks = [
     bpm: 132,
     energy: "high",
     moods: ["workout", "party"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 8,
@@ -124,6 +140,8 @@ const tracks = [
     bpm: 102,
     energy: "medium",
     moods: ["night", "focus"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 9,
@@ -133,6 +151,8 @@ const tracks = [
     bpm: 84,
     energy: "low",
     moods: ["chill", "study"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
   {
     id: 10,
@@ -142,6 +162,8 @@ const tracks = [
     bpm: 124,
     energy: "high",
     moods: ["focus", "workout", "party"],
+    audioUrl: demoAudioUrl,
+    previewUrl: demoAudioUrl,
   },
 ];
 

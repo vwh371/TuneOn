@@ -78,6 +78,14 @@
         "language": "English"
       },
       "updatedAt": "2026-04-25T14:18:20.583Z"
+    },
+    {
+      "id": "1777346336065",
+      "name": "Test User",
+      "email": "testuser@tuneon.com",
+      "passwordHash": "$2b$10$KYLl.GoCuXxbZGux8ZdTie0EEZzfy5HC5N8931KsnGvg.qV0T7kJC",
+      "authProvider": "local",
+      "createdAt": "2026-04-28T03:18:56.065Z"
     }
   ]
 }
