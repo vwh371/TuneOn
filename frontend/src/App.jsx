@@ -45,6 +45,29 @@ export default function App() {
       const playableUrl = getPlayableUrl(currentTrack);
       const audio = audioRef.current;
 
+      const startAudio = (track, currentTime = 0) => {
+        if (!audio) {
+          return;
+        }
+
+        const nextUrl = getPlayableUrl(track);
+        if (!nextUrl) {
+          return;
+        }
+
+        if (audio.src !== nextUrl) {
+          audio.src = nextUrl;
+        }
+
+        audio.currentTime = Math.max(0, Number(currentTime) || 0);
+        audio.loop = currentState.repeatMode === "one";
+
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      };
+
       if (command.type === "set-track") {
         writePlayerState({
           ...currentState,
@@ -57,6 +80,12 @@ export default function App() {
           repeatMode: ["off", "all", "one"].includes(command.repeatMode) ? command.repeatMode : currentState.repeatMode,
         });
         writeAudioState({ currentTime: Number(command.currentTime) || 0, ready: false, duration: 0, sourceUrl: playableUrl });
+
+        if (Boolean(command.isPlaying ?? true) && playableUrl) {
+          startAudio(currentTrack, Number(command.currentTime) || 0);
+        } else if (audio) {
+          audio.pause();
+        }
         return;
       }
 
@@ -120,6 +149,8 @@ export default function App() {
           showPopup: currentState.showPopup,
         });
         writeAudioState({ currentTime: 0, duration: 0, ready: false, sourceUrl: getPlayableUrl(resolved.track) });
+
+        startAudio(resolved.track, 0);
         return;
       }
 

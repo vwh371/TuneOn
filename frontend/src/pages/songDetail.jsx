@@ -123,15 +123,21 @@ export default function SongDetail() {
         setSelectedTrack(parsedTrack);
 
         const currentState = readPlayerState();
+        const queueFromState = Array.isArray(currentState.queue) && currentState.queue.length > 0 ? currentState.queue : [parsedTrack].filter(Boolean);
+        const currentIndex = queueFromState.findIndex((item) => item?.id === parsedTrack?.id);
+        const shouldAutoPlay = Boolean(getPlayableUrl(parsedTrack) || parsedTrack?.embedUrl);
+
         if (!currentState.track || currentState.track?.id !== parsedTrack?.id) {
           announcePlayerCommand({
             type: "set-track",
             track: parsedTrack,
-            queue: [parsedTrack].filter(Boolean),
-            currentIndex: 0,
-            isPlaying: Boolean(currentState.isPlaying),
+            queue: queueFromState,
+            currentIndex: currentIndex >= 0 ? currentIndex : 0,
+            isPlaying: shouldAutoPlay ? true : Boolean(currentState.isPlaying),
             showPopup: false,
           });
+        } else if (shouldAutoPlay && !currentState.isPlaying) {
+          announcePlayerCommand({ type: "play" });
         }
       } catch (err) {
         console.error("Could not load song details");
