@@ -154,7 +154,7 @@ function rankLocalTracks(list, preferredGenres = [], activeGenre = "", mood = "f
   const normalizedArtist = normalize(artist);
 
   return [...list]
-    .map((track) => {
+    .map((track, index) => {
       const trackGenre = normalize(track.genre);
       let score = 0;
 
@@ -181,11 +181,11 @@ function rankLocalTracks(list, preferredGenres = [], activeGenre = "", mood = "f
       return {
         ...track,
         __score: score,
-        __random: Math.random(),
+        __index: index,
       };
     })
-    .sort((a, b) => b.__score - a.__score || a.__random - b.__random)
-    .map(({ __score, __random, ...track }) => track);
+    .sort((a, b) => b.__score - a.__score || a.__index - b.__index)
+    .map(({ __score, __index, ...track }) => track);
 }
 
 function getLocalRecommendations({ mood = "focus", genre = "", genres = [], artist = "", limit = 8 }) {
@@ -227,16 +227,16 @@ function prioritizeRecommendations(list, preferredGenres = [], activeGenre = "")
   );
 
   return [...list]
-    .map((track) => {
+    .map((track, index) => {
       const trackGenre = String(track.genre || "").trim().toLowerCase();
       return {
         ...track,
         __priority: priorityGenres.has(trackGenre) ? 1 : 0,
-        __random: Math.random(),
+        __index: index,
       };
     })
-    .sort((a, b) => b.__priority - a.__priority || a.__random - b.__random)
-    .map(({ __priority, __random, ...track }) => track);
+    .sort((a, b) => b.__priority - a.__priority || a.__index - b.__index)
+    .map(({ __priority, __index, ...track }) => track);
 }
 
 async function readResponseJson(response) {
