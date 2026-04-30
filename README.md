@@ -51,6 +51,7 @@ SPOTIFY_CLIENT_SECRET=your-spotify-client-secret
 GOOGLE_CLIENT_ID=your-google-oauth-client-id
 APPLE_CLIENT_ID=your-apple-service-id
 FRONTEND_BASE_URL=http://localhost:5173
+RESET_EMAIL_MODE=auto
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -72,7 +73,10 @@ Notes:
 - Spotify variables enable Spotify-powered recommendations.
 - Google client IDs enable Google login on both frontend and backend.
 - Apple client IDs and redirect URI enable Apple login on both frontend and backend.
-- SMTP settings enable forgot-password emails and secure reset links.
+- Set `RESET_EMAIL_MODE=auto` (default) to use SMTP when credentials are available and log-only mode otherwise.
+- Set `RESET_EMAIL_MODE=smtp` to force real email delivery through SMTP (recommended for production).
+- Set `RESET_EMAIL_MODE=log` for local development; reset links are printed in backend logs instead of being sent.
+- SMTP settings enable forgot-password emails and secure reset links when using SMTP mode.
 - Home recommendations now try YouTube first, then Spotify, then TuneOn local fallback.
 
 ## Available Scripts
