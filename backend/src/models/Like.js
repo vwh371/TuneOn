@@ -17,6 +17,7 @@ const Like = sequelize.define('Like', {
     },
     songId: {
         type: DataTypes.INTEGER,
+        allowNull: true,
         references: {
             model: 'songs',
             key: 'id'
@@ -24,6 +25,7 @@ const Like = sequelize.define('Like', {
     },
     playlistId: {
         type: DataTypes.INTEGER,
+        allowNull: true,
         references: {
             model: 'playlists',
             key: 'id'
@@ -34,8 +36,34 @@ const Like = sequelize.define('Like', {
         allowNull: false
     }
 }, {
+    tableName: 'likes',
     timestamps: true,
-    tableName: 'likes'
+    indexes: [
+        {
+            unique: true,
+            fields: ['userId', 'songId', 'type'],
+            where: {
+                type: 'song'
+            }
+        },
+        {
+            unique: true,
+            fields: ['userId', 'playlistId', 'type'],
+            where: {
+                type: 'playlist'
+            }
+        }
+    ],
+    validate: {
+        validLike() {
+            if (this.type === 'song' && !this.songId) {
+                throw new Error('Song ID is required for song likes');
+            }
+            if (this.type === 'playlist' && !this.playlistId) {
+                throw new Error('Playlist ID is required for playlist likes');
+            }
+        }
+    }
 });
 
 module.exports = Like;
