@@ -86,3 +86,29 @@ const getVideoDetails = async (req, res) => {
         });
     }
 };
+// @desc    Add YouTube song to platform
+// @route   POST /api/youtube/add
+// @access  Private (Listener/Admin)
+const addYouTubeSong = async (req, res) => {
+    try {
+        const { videoId, title, artist, thumbnail, genre } = req.body;
+        
+        if (!videoId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Video ID is required'
+            });
+        }
+        
+        // Check if song already exists
+        const existingSong = await Song.findOne({
+            where: { youtubeVideoId: videoId }
+        });
+        
+        if (existingSong) {
+            return res.status(400).json({
+                success: false,
+                message: 'This song already exists in the platform',
+                song: existingSong
+            });
+        }
