@@ -155,3 +155,32 @@ const addYouTubeSong = async (req, res) => {
         });
     }
 };
+// @desc    Get YouTube stream info
+// @route   GET /api/youtube/stream/:videoId
+// @access  Private
+const getYouTubeStream = async (req, res) => {
+    try {
+        const { videoId } = req.params;
+        
+        // Return embed URL for frontend integration
+        res.json({
+            success: true,
+            streamUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            embedUrl: `https://www.youtube.com/embed/${videoId}`,
+            thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting stream URL'
+        });
+    }
+};
+
+module.exports = {
+    searchYouTube,
+    getVideoDetails,
+    addYouTubeSong,
+    getYouTubeStream
+};
