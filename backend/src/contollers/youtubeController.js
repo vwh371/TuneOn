@@ -45,3 +45,44 @@ const searchYouTube = async (req, res) => {
         });
     }
 };
+// @desc    Get YouTube video details
+// @route   GET /api/youtube/video/:videoId
+// @access  Private
+const getVideoDetails = async (req, res) => {
+    try {
+        const { videoId } = req.params;
+        
+        const response = await youtube.videos.list({
+            part: 'snippet,contentDetails',
+            id: videoId,
+            fields: 'items(id,snippet(title,channelTitle,thumbnails(medium)),contentDetails(duration))'
+        });
+        
+        if (!response.data.items.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Video not found'
+            });
+        }
+        
+        const video = response.data.items[0];
+        const duration = parseYouTubeDuration(video.contentDetails.duration);
+        
+        res.json({
+            success: true,
+            video: {
+                videoId: video.id,
+                title: video.snippet.title,
+                channelName: video.snippet.channelTitle,
+                thumbnail: video.snippet.thumbnails.medium.url,
+                duration: duration
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching video details'
+        });
+    }
+};
