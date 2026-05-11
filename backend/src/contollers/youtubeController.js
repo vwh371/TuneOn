@@ -112,3 +112,46 @@ const addYouTubeSong = async (req, res) => {
                 song: existingSong
             });
         }
+        
+        // Get video details
+        const videoResponse = await youtube.videos.list({
+            part: 'contentDetails,snippet',
+            id: videoId
+        });
+        
+        if (!videoResponse.data.items.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Video not found on YouTube'
+            });
+        }
+        
+        const videoDetails = videoResponse.data.items[0];
+        const duration = parseYouTubeDuration(videoDetails.contentDetails.duration);
+        
+        const song = await Song.create({
+            title: title || videoDetails.snippet.title,
+            artist: artist || videoDetails.snippet.channelTitle,
+            genre: genre || 'Other',
+            duration: duration,
+            audioUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            coverImage: thumbnail || videoDetails.snippet.thumbnails.medium.url,
+            uploadedBy: req.user.id,
+            uploadType: 'youtube',
+            youtubeVideoId: videoId
+        });
+        
+        res.status(201).json({
+            success: true,
+            message: 'YouTube song added successfully',
+            song
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding YouTube song',
+            error: process.env.NODE_ENV === 'development' ? error.message : {}
+        });
+    }
+};
