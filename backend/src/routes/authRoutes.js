@@ -20,3 +20,8 @@ router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
 router.put('/change-password', protect, changePassword);
 
+// Admin routes
+router.post('/create-admin', protect, adminMiddleware, createAdmin);
+router.get('/users', protect, adminMiddleware, getAllUsers);
+
+module.exports = router;
