@@ -206,3 +206,31 @@ const approveLyrics = async (req, res) => {
         });
     }
 };
+// @desc    Delete lyrics (Admin only)
+// @route   DELETE /api/lyrics/:lyricsId
+// @access  Private/Admin
+const deleteLyrics = async (req, res) => {
+    try {
+        const lyrics = await Lyrics.findByPk(req.params.lyricsId);
+        
+        if (!lyrics) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lyrics not found'
+            });
+        }
+        
+        await lyrics.destroy();
+        
+        res.json({
+            success: true,
+            message: 'Lyrics deleted successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting lyrics'
+        });
+    }
+};
