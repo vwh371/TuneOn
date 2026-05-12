@@ -234,3 +234,55 @@ const deleteLyrics = async (req, res) => {
         });
     }
 };
+// @desc    Search lyrics
+// @route   GET /api/lyrics/search
+// @access  Public
+const searchLyrics = async (req, res) => {
+    try {
+        const { q } = req.query;
+        
+        if (!q) {
+            return res.status(400).json({
+                success: false,
+                message: 'Search query is required'
+            });
+        }
+        
+        const lyrics = await Lyrics.findAll({
+            where: {
+                approved: true,
+                lyricsText: { [require('sequelize').Op.like]: `%${q}%` }
+            },
+            include: [{
+                model: Song,
+                as: 'song',
+                attributes: ['id', 'title', 'artist', 'coverImage']
+            }],
+            limit: 20
+        });
+        
+        res.json({
+            success: true,
+            count: lyrics.length,
+            results: lyrics.map(lyric => ({
+                song: lyric.song,
+                lyricsPreview: lyric.lyricsText.substring(0, 200) + '...'
+            }))
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error searching lyrics'
+        });
+    }
+};
+
+module.exports = {
+    addLyrics,
+    getLyrics,
+    getPendingLyrics,
+    approveLyrics,
+    deleteLyrics,
+    searchLyrics
+};
