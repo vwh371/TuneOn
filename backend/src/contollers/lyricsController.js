@@ -136,3 +136,38 @@ const getLyrics = async (req, res) => {
         });
     }
 };
+// @desc    Get pending lyrics (Admin only)
+// @route   GET /api/lyrics/pending
+// @access  Private/Admin
+const getPendingLyrics = async (req, res) => {
+    try {
+        const lyrics = await Lyrics.findAll({
+            where: { approved: false },
+            include: [
+                {
+                    model: Song,
+                    as: 'song',
+                    attributes: ['id', 'title', 'artist']
+                },
+                {
+                    model: User,
+                    as: 'contributor',
+                    attributes: ['id', 'name', 'email']
+                }
+            ],
+            order: [['createdAt', 'ASC']]
+        });
+        
+        res.json({
+            success: true,
+            count: lyrics.length,
+            lyrics
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching pending lyrics'
+        });
+    }
+};
