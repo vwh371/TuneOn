@@ -80,3 +80,59 @@ const addLyrics = async (req, res) => {
         });
     }
 };
+// @desc    Get lyrics for a song
+// @route   GET /api/lyrics/:songId
+// @access  Public
+const getLyrics = async (req, res) => {
+    try {
+        const { songId } = req.params;
+        
+        const song = await Song.findByPk(songId);
+        if (!song) {
+            return res.status(404).json({
+                success: false,
+                message: 'Song not found'
+            });
+        }
+        
+        const lyrics = await Lyrics.findOne({
+            where: { 
+                songId,
+                approved: true // Only return approved lyrics
+            },
+            include: [{
+                model: User,
+                as: 'contributor',
+                attributes: ['id', 'name']
+            }]
+        });
+        
+        if (!lyrics) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lyrics not available for this song'
+            });
+        }
+        
+        res.json({
+            success: true,
+            song: {
+                id: song.id,
+                title: song.title,
+                artist: song.artist
+            },
+            lyrics: {
+                text: lyrics.lyricsText,
+                synced: lyrics.syncedLyrics,
+                language: lyrics.language,
+                contributor: lyrics.contributor
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching lyrics'
+        });
+    }
+};
