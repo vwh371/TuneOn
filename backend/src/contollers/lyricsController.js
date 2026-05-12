@@ -171,3 +171,38 @@ const getPendingLyrics = async (req, res) => {
         });
     }
 };
+// @desc    Approve lyrics (Admin only)
+// @route   PUT /api/lyrics/:lyricsId/approve
+// @access  Private/Admin
+const approveLyrics = async (req, res) => {
+    try {
+        const lyrics = await Lyrics.findByPk(req.params.lyricsId);
+        
+        if (!lyrics) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lyrics not found'
+            });
+        }
+        
+        if (lyrics.approved) {
+            return res.status(400).json({
+                success: false,
+                message: 'Lyrics already approved'
+            });
+        }
+        
+        await lyrics.update({ approved: true });
+        
+        res.json({
+            success: true,
+            message: 'Lyrics approved successfully'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error approving lyrics'
+        });
+    }
+};
