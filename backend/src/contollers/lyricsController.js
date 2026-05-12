@@ -29,3 +29,54 @@ const addLyrics = async (req, res) => {
         }
         
         let lyrics = await Lyrics.findOne({ where: { songId }, transaction });
+        if (lyrics) {
+            // Update existing lyrics (requires admin approval if not admin)
+            if (req.user.role !== 'admin' && lyrics.approved) {
+                await transaction.rollback();
+                return res.status(403).json({
+                    success: false,
+                    message: 'Approved lyrics can only be edited by admin'
+                });
+            }
+            
+            await lyrics.update({
+                lyricsText: lyricsText || lyrics.lyricsText,
+                syncedLyrics: syncedLyrics || lyrics.syncedLyrics,
+                language: language || lyrics.language,
+                contributorId: req.user.id,
+                approved: req.user.role === 'admin'
+            }, { transaction });
+        } else {
+            // Create new lyrics
+            lyrics = await Lyrics.create({
+                songId,
+                lyricsText,
+                syncedLyrics: syncedLyrics || null,
+                language: language || 'en',
+                contributorId: req.user.id,
+                approved: req.user.role === 'admin'
+            }, { transaction });
+        }
+        
+        await transaction.commit();
+        
+        res.status(201).json({
+            success: true,
+            message: lyrics.approved ? 'Lyrics added successfully' : 'Lyrics submitted for approval',
+            lyrics: {
+                lyricsText: lyrics.lyricsText,
+                syncedLyrics: lyrics.syncedLyrics,
+                language: lyrics.language,
+                approved: lyrics.approved
+            }
+        });
+    } catch (error) {
+        await transaction.rollback();
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding lyrics',
+            error: process.env.NODE_ENV === 'development' ? error.message : {}
+        });
+    }
+};
