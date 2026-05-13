@@ -21,3 +21,9 @@ router.get('/trending', getTrendingSongs);
 router.get('/genre/:genre', getSongsByGenre);
 router.get('/:id', getSongById);
 
+// Private routes (require authentication)
+router.post('/upload', protect, uploadAudio, uploadLocalSong);
+router.post('/:id/like', protect, toggleLikeSong);
+router.get('/liked/my-likes', protect, getLikedSongs);
+router.get('/uploads/my-uploads', protect, getMyUploads);
+
