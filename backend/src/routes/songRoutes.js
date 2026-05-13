@@ -27,3 +27,8 @@ router.post('/:id/like', protect, toggleLikeSong);
 router.get('/liked/my-likes', protect, getLikedSongs);
 router.get('/uploads/my-uploads', protect, getMyUploads);
 
+// Admin routes
+router.put('/:id', protect, adminMiddleware, updateSong);
+router.delete('/:id', protect, adminMiddleware, deleteSong);
+
+module.exports = router;
