@@ -6,3 +6,8 @@ const formatDuration = (seconds) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+// Generate random string
+const generateRandomString = (length = 8) => {
+    return Math.random().toString(36).substring(2, 2 + length);
+};
+
