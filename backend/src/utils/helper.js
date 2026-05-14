@@ -11,3 +11,8 @@ const generateRandomString = (length = 8) => {
     return Math.random().toString(36).substring(2, 2 + length);
 };
 
+// Validate email format
+const isValidEmail = (email) => {
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    return emailRegex.test(email);
+};
