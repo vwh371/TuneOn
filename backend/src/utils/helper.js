@@ -16,3 +16,18 @@ const isValidEmail = (email) => {
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     return emailRegex.test(email);
 };
+
+// Clean filename for upload
+const sanitizeFilename = (filename) => {
+    return filename
+        .toLowerCase()
+        .replace(/[^a-z0-9.]/g, '-')
+        .replace(/-+/g, '-');
+};
+
+module.exports = {
+    formatDuration,
+    generateRandomString,
+    isValidEmail,
+    sanitizeFilename
+};
