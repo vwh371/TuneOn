@@ -122,3 +122,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Context value to be provided to children
+  const value = {
+    user,                   // Current user object
+    isAuthenticated,        // Boolean auth status
+    loading,               // Loading state
+    token,                 // JWT token
+    register,              // Register function
+    login,                 // Login function
+    logout,                // Logout function
+    updateProfile,         // Update profile function
+    changePassword,        // Change password function
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
