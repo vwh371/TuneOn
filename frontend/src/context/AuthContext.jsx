@@ -106,3 +106,19 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
+  /**
+   * Change user password
+   * @param {Object} passwordData - Current and new password
+   */
+  const changePassword = async (passwordData) => {
+    try {
+      const response = await authService.changePassword(passwordData);
+      toast.success('Password changed successfully');
+      return response;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+      throw error;
+    }
+  };
+
