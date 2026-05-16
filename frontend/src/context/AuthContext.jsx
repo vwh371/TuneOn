@@ -61,3 +61,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Login user
+   * @param {Object} credentials - User credentials (email, password)
+   */
+  const login = async (credentials) => {
+    try {
+      const response = await authService.login(credentials);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      setToken(response.token);
+      toast.success(`Welcome back, ${response.user.name}!`);
+      return response;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      throw error;
+    }
+  };
