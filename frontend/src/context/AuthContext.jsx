@@ -79,3 +79,14 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+
+  /**
+   * Logout user - Clear all auth data
+   */
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+    setToken(null);
+    toast.info('You have been logged out');
+  };
