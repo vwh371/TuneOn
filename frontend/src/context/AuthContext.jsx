@@ -90,3 +90,19 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     toast.info('You have been logged out');
   };
+
+  /**
+   * Update user profile information
+   * @param {Object} userData - Updated profile data
+   */
+  const updateProfile = async (userData) => {
+    try {
+      const response = await authService.updateProfile(userData);
+      setUser(response.user);
+      toast.success('Profile updated successfully');
+      return response;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+      throw error;
+    }
+  };
