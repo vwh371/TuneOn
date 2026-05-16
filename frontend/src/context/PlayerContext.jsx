@@ -28,3 +28,38 @@ export const PlayerProvider = ({ children }) => {
   const [shuffledQueue, setShuffledQueue] = useState([]);    // Shuffled version of queue
   
   const audioRef = useRef(null);  // Reference to audio element
+
+  /**
+   * Apply volume changes to audio element
+   */
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  /**
+   * Play a specific song
+   * @param {Object} song - Song object to play
+   * @param {Array} songsQueue - Optional custom queue
+   */
+  const playSong = (song, songsQueue = null) => {
+    let newQueue = songsQueue || queue;
+    let newIndex = newQueue.findIndex(s => s.id === song.id);
+    
+    // If song not in queue, create new queue with just this song
+    if (newIndex === -1) {
+      newQueue = [song];
+      newIndex = 0;
+    }
+    
+    setQueue(newQueue);
+    setCurrentIndex(newIndex);
+    setCurrentSong(song);
+    setIsPlaying(true);
+    
+    // Update shuffled queue if shuffle is on
+    if (isShuffled) {
+      shuffleQueue(newQueue);
+    }
+  };
