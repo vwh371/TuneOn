@@ -63,3 +63,25 @@ export const PlayerProvider = ({ children }) => {
       shuffleQueue(newQueue);
     }
   };
+
+  /**
+   * Play the next song in queue
+   */
+  const playNext = () => {
+    let nextIndex = currentIndex + 1;
+    const activeQueue = isShuffled ? shuffledQueue : queue;
+    
+    // Handle end of queue based on repeat mode
+    if (nextIndex >= activeQueue.length) {
+      if (repeatMode === 'all') {
+        nextIndex = 0; // Loop back to start
+      } else {
+        pause();
+        return;
+      }
+    }
+    
+    setCurrentIndex(nextIndex);
+    setCurrentSong(activeQueue[nextIndex]);
+    setIsPlaying(true);
+  };
