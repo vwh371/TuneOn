@@ -42,4 +42,22 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
- 
+  /**
+   * Register a new user
+   * @param {Object} userData - User registration data (name, email, password)
+   */
+  const register = async (userData) => {
+    try {
+      const response = await authService.register(userData);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      setToken(response.token);
+      toast.success('Registration successful! Welcome aboard!');
+      return response;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+      throw error;
+    }
+  };
+
