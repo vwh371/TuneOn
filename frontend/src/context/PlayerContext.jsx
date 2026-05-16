@@ -105,3 +105,25 @@ export const PlayerProvider = ({ children }) => {
     setCurrentSong(activeQueue[prevIndex]);
     setIsPlaying(true);
   };
+
+  /**
+   * Toggle play/pause
+   */
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  /**
+   * Pause current playback
+   */
+  const pause = () => {
+    setIsPlaying(false);
+  };
+
+  /**
+   * Add song to end of queue
+   * @param {Object} song - Song to add
+   */
+  const addToQueue = (song) => {
+    setQueue(prev => [...prev, song]);
+  };
