@@ -85,3 +85,23 @@ export const PlayerProvider = ({ children }) => {
     setCurrentSong(activeQueue[nextIndex]);
     setIsPlaying(true);
   };
+
+  /**
+   * Play the previous song in queue
+   */
+  const playPrevious = () => {
+    let prevIndex = currentIndex - 1;
+    const activeQueue = isShuffled ? shuffledQueue : queue;
+    
+    if (prevIndex < 0) {
+      if (repeatMode === 'all') {
+        prevIndex = activeQueue.length - 1; // Go to end
+      } else {
+        return;
+      }
+    }
+    
+    setCurrentIndex(prevIndex);
+    setCurrentSong(activeQueue[prevIndex]);
+    setIsPlaying(true);
+  };
