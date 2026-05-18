@@ -155,3 +155,37 @@ export const PlayerProvider = ({ children }) => {
       playNext();
     }
   };
+
+   /**
+   * Clear entire queue
+   */
+  const clearQueue = () => {
+    setQueue([]);
+    setCurrentIndex(-1);
+    setCurrentSong(null);
+    setIsPlaying(false);
+  }
+
+    /**
+   * Shuffle the queue using Fisher-Yates algorithm
+   * @param {Array} songs - Songs to shuffle (defaults to current queue)
+   */
+  const shuffleQueue = (songs = null) => {
+    const songsToShuffle = songs || queue;
+    const shuffled = [...songsToShuffle];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setShuffledQueue(shuffled);
+  };
+
+  /**
+   * Toggle shuffle mode
+   */
+  const toggleShuffle = () => {
+    setIsShuffled(!isShuffled);
+    if (!isShuffled && queue.length > 0) {
+      shuffleQueue();
+    }
+  };
