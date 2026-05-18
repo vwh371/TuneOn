@@ -127,3 +127,14 @@ export const PlayerProvider = ({ children }) => {
   const addToQueue = (song) => {
     setQueue(prev => [...prev, song]);
   };
+
+
+  /**
+   * Add song to play next (right after current)
+   * @param {Object} song - Song to add
+   */
+  const addToQueueNext = (song) => {
+    const newQueue = [...queue];
+    newQueue.splice(currentIndex + 1, 0, song);
+    setQueue(newQueue);
+  };
