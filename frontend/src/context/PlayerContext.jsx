@@ -189,3 +189,39 @@ export const PlayerProvider = ({ children }) => {
       shuffleQueue();
     }
   };
+
+    /**
+   * Handle audio time update event
+   * @param {Event} e - Time update event
+   */
+  const handleTimeUpdate = (e) => {
+    const currentTime = e.target.currentTime;
+    const progressPercent = (currentTime / duration) * 100;
+    setProgress(progressPercent);
+  };
+
+  /**
+   * Seek to specific position
+   * @param {number} value - Percentage (0-100) to seek to
+   */
+  const handleSeek = (value) => {
+    if (audioRef.current && duration) {
+      const seekTime = (value / 100) * duration;
+      audioRef.current.currentTime = seekTime;
+      setProgress(value);
+    }
+    
+  /**
+   * Handle song end event
+   * Determines next action based on repeat mode
+   */
+  const handleSongEnd = () => {
+    if (repeatMode === 'one') {
+      // Repeat current song
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    } else {
+      // Play next song
+      playNext();
+    }
+  }
