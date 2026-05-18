@@ -210,4 +210,18 @@ export const PlayerProvider = ({ children }) => {
       audioRef.current.currentTime = seekTime;
       setProgress(value);
     }
-  };
+    
+  /**
+   * Handle song end event
+   * Determines next action based on repeat mode
+   */
+  const handleSongEnd = () => {
+    if (repeatMode === 'one') {
+      // Repeat current song
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    } else {
+      // Play next song
+      playNext();
+    }
+  }
