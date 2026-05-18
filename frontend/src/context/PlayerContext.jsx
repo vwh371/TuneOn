@@ -127,3 +127,31 @@ export const PlayerProvider = ({ children }) => {
   const addToQueue = (song) => {
     setQueue(prev => [...prev, song]);
   };
+
+
+  /**
+   * Add song to play next (right after current)
+   * @param {Object} song - Song to add
+   */
+  const addToQueueNext = (song) => {
+    const newQueue = [...queue];
+    newQueue.splice(currentIndex + 1, 0, song);
+    setQueue(newQueue);
+  };
+
+    /**
+   * Remove song from queue by index
+   * @param {number} index - Index of song to remove
+   */
+  const removeFromQueue = (index) => {
+    const newQueue = [...queue];
+    newQueue.splice(index, 1);
+    setQueue(newQueue);
+    
+    // Adjust current index if needed
+    if (index < currentIndex) {
+      setCurrentIndex(currentIndex - 1);
+    } else if (index === currentIndex) {
+      playNext();
+    }
+  };
