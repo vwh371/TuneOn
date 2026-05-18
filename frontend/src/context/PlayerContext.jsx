@@ -209,7 +209,7 @@ export const PlayerProvider = ({ children }) => {
       const seekTime = (value / 100) * duration;
       audioRef.current.currentTime = seekTime;
       setProgress(value);
-    }
+    };
     
   /**
    * Handle song end event
@@ -224,4 +224,40 @@ export const PlayerProvider = ({ children }) => {
       // Play next song
       playNext();
     }
-  }
+  };
+  // Context value
+  const value = {
+    currentSong,        // Currently playing song object
+    isPlaying,          // Boolean play status
+    queue,              // Array of queued songs
+    volume,             // Current volume level
+    progress,           // Playback progress percentage
+    duration,           // Total duration in seconds
+    repeatMode,         // Current repeat mode
+    isShuffled,         // Shuffle status
+    audioRef,           // Reference to audio element
+    
+    // Playback controls
+    playSong,
+    playNext,
+    playPrevious,
+    togglePlay,
+    pause,
+    
+    // Queue management
+    addToQueue,
+    addToQueueNext,
+    removeFromQueue,
+    clearQueue,
+    
+    // Settings
+    setVolume,
+    setRepeatMode,
+    toggleShuffle,
+    
+    // Event handlers
+    handleTimeUpdate,
+    handleSeek,
+    handleSongEnd,
+    setDuration,
+  };
