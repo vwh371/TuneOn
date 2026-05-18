@@ -261,3 +261,23 @@ export const PlayerProvider = ({ children }) => {
     handleSongEnd,
     setDuration,
   };
+  
+   return (
+    <PlayerContext.Provider value={value}>
+      {children}
+      {/* Hidden audio element for playback */}
+      {currentSong && (
+        <audio
+          ref={audioRef}
+          src={currentSong.audioUrl}
+          autoPlay={isPlaying}
+          onTimeUpdate={handleTimeUpdate}
+          onDurationChange={(e) => setDuration(e.target.duration)}
+          onEnded={handleSongEnd}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+        />
+      )}
+    </PlayerContext.Provider>
+  );
+};
