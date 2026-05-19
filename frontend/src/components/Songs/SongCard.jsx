@@ -43,3 +43,33 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
       }
     }
   };
+
+  /**
+   * Handle like/unlike button click
+   * @param {Event} e - Click event
+   */
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await songService.likeSong(song.id);
+      const newLikedState = !liked;
+      setLiked(newLikedState);
+      
+      // Notify parent component if callback provided
+      if (onLikeToggle) {
+        onLikeToggle(song.id, newLikedState);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
