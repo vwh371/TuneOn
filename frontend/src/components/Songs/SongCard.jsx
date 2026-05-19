@@ -73,3 +73,35 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
       setLoading(false);
     }
   };
+
+  /**
+   * Navigate to song detail page
+   */
+  const handleCardClick = () => {
+    navigate(`/song/${song.id}`);
+  };
+
+  // Different variants for different display contexts
+  const variants = {
+    default: 'w-full',           // Normal grid view
+    compact: 'w-48',             // Smaller card for playlists
+    list: 'flex items-center p-3' // List view style
+  };
+
+  return (
+    <div
+      className={`${variants[variant]} card group relative`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={handleCardClick}
+    >
+      {variant === 'list' ? (
+        // List view layout
+        <div className="flex items-center space-x-4 w-full">
+          <div className="relative">
+            <img
+              src={song.coverImage || '/assets/default-cover.jpg'}
+              alt={song.title}
+              className="w-12 h-12 rounded object-cover"
+              loading="lazy"
+            />
