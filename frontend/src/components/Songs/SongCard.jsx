@@ -137,3 +137,17 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
           </div>
         </div>
       ) : (
+        // Card/Grid view layout
+        <>
+          {/* Image Container */}
+          <div className="relative">
+            <img
+              src={song.coverImage || '/assets/default-cover.jpg'}
+              alt={song.title}
+              className="w-full aspect-square object-cover rounded-lg mb-3"
+              loading="lazy"
+              onError={(e) => {
+                e.target.src = '/assets/default-cover.jpg';
+              }}
+            />
+            
