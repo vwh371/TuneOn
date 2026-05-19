@@ -196,4 +196,12 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
             )}
           </div>
 
-   
+          {/* Song Information */}
+          <div className="mt-2">
+            <h3 className="text-sm font-medium text-white truncate" title={song.title}>
+              {song.title}
+            </h3>
+            <p className="text-xs text-gray-400 truncate mt-1" title={song.artist}>
+              {song.artist}
+            </p>
+            
