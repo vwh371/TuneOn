@@ -215,4 +215,17 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
               )}
             </div>
             
-  
+            {/* Genre Tag (Optional) */}
+            {song.genre && song.genre !== 'Other' && (
+              <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-800 rounded-full text-gray-400">
+                {song.genre}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default SongCard;
