@@ -169,3 +169,19 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
                 )}
               </button>
             </div>
+
+            {/* Like Button - Top right corner */}
+            <button
+              onClick={handleLike}
+              disabled={loading}
+              className={`absolute top-2 right-2 p-2 rounded-full bg-black bg-opacity-50 transition ${
+                hovered ? 'opacity-100' : 'opacity-0'
+              } hover:scale-110`}
+              aria-label={liked ? 'Unlike' : 'Like'}
+            >
+              {liked ? (
+                <FaHeart className="text-green-500" size={16} />
+              ) : (
+                <FaHeartBroken className="text-gray-400" size={16} />
+              )}
+            </button>
