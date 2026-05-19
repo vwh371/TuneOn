@@ -151,3 +151,21 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
               }}
             />
             
+            {/* Play Button Overlay - Shows on hover */}
+            <div
+              className={`absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 rounded-lg ${
+                hovered ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <button
+                onClick={handlePlayPause}
+                className="w-12 h-12 rounded-full bg-green-500 text-black flex items-center justify-center hover:scale-110 transition transform"
+                aria-label={isCurrentSong && isPlaying ? 'Pause' : 'Play'}
+              >
+                {isCurrentSong && isPlaying ? (
+                  <FaPause size={20} />
+                ) : (
+                  <FaPlay size={20} className="ml-1" />
+                )}
+              </button>
+            </div>
