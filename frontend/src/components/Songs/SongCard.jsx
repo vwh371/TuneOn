@@ -105,3 +105,35 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
               className="w-12 h-12 rounded object-cover"
               loading="lazy"
             />
+            {/* Play button overlay for list view */}
+            {hovered && (
+              <button
+                onClick={handlePlayPause}
+                className="absolute inset-0 bg-black bg-opacity-50 rounded flex items-center justify-center"
+              >
+                {isCurrentSong && isPlaying ? <FaPause size={12} /> : <FaPlay size={12} />}
+              </button>
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{song.title}</p>
+            <p className="text-xs text-gray-400 truncate">{song.artist}</p>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-gray-500">{formatDuration(song.duration)}</span>
+            <button
+              onClick={handleLike}
+              disabled={loading}
+              className="p-1 hover:scale-110 transition"
+            >
+              {liked ? (
+                <FaHeart className="text-green-500" size={14} />
+              ) : (
+                <FaHeartBroken className="text-gray-400" size={14} />
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
