@@ -185,3 +185,15 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
                 <FaHeartBroken className="text-gray-400" size={16} />
               )}
             </button>
+
+            {/* Currently Playing Animation Indicator */}
+            {isCurrentSong && isPlaying && (
+              <div className="absolute bottom-2 left-2 playing-animation">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+          </div>
+
+   
