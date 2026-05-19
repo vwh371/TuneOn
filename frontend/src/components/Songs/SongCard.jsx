@@ -196,4 +196,23 @@ const SongCard = ({ song, isLiked = false, onLikeToggle, variant = 'default' }) 
             )}
           </div>
 
-   
+          {/* Song Information */}
+          <div className="mt-2">
+            <h3 className="text-sm font-medium text-white truncate" title={song.title}>
+              {song.title}
+            </h3>
+            <p className="text-xs text-gray-400 truncate mt-1" title={song.artist}>
+              {song.artist}
+            </p>
+            
+            {/* Metadata Row */}
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-gray-500">{formatDuration(song.duration)}</span>
+              {song.plays > 0 && (
+                <span className="text-xs text-gray-500">
+                  {song.plays >= 1000 ? `${(song.plays / 1000).toFixed(1)}K` : song.plays} plays
+                </span>
+              )}
+            </div>
+            
+  
