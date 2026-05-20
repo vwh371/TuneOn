@@ -104,3 +104,16 @@ const Login = () => {
             )}
           </button>
         </form>
+
+        {/* Demo Credentials for Testing */}
+        <div className="p-4 bg-gray-800 rounded-lg text-center">
+          <p className="text-xs text-gray-400 mb-2">Demo Accounts:</p>
+          <p className="text-xs text-gray-400">Listener: listener@example.com / password123</p>
+          <p className="text-xs text-gray-400">Admin: admin@musicstreaming.com / Admin@123456</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
