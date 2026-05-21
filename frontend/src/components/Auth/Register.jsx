@@ -120,3 +120,18 @@ const Register = () => {
                 placeholder="Email address"
               />
             </div>
+            
+            {/* Password Input */}
+            <div className="relative">
+              <FaLock className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                placeholder="Password (min. 6 characters)"
+              />
+            </div>
+            
