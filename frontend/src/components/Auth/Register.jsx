@@ -149,3 +149,24 @@ const Register = () => {
               />
             </div>
           </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full btn-primary disabled:opacity-50"
+          >
+            {loading ? 'Creating account...' : 'Sign up'}
+          </button>
+        </form>
+
+        {/* Terms and Conditions */}
+        <p className="text-xs text-center text-gray-500">
+          By signing up, you agree to our Terms of Service and Privacy Policy
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default Register;
