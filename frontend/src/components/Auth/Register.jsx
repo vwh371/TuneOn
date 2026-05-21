@@ -88,3 +88,22 @@ const Register = () => {
             {error}
           </div>
         )}
+
+        {/* Registration Form */}
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            
+            {/* Name Input */}
+            <div className="relative">
+              <FaUser className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full pl-10 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-green-500 focus:border-green-500"
+                placeholder="Full name"
+              />
+            </div>
+            
