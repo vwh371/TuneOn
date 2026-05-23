@@ -25,3 +25,19 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     }
     return pages;
   };
+
+  // Don't show pagination if only one page
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-center space-x-2 mt-8">
+      {/* Previous Button */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="p-2 rounded-lg bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition"
+        aria-label="Previous page"
+      >
+        <FaChevronLeft size={16} />
+      </button>
+      
