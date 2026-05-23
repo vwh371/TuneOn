@@ -69,3 +69,32 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </button>
       ))}
       
+      {/* Last Page and Ellipsis */}
+      {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+        <>
+          {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
+            <span className="text-gray-400">...</span>
+          )}
+          <button
+            onClick={() => onPageChange(totalPages)}
+            className="px-3 py-1 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition"
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+      
+      {/* Next Button */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="p-2 rounded-lg bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition"
+        aria-label="Next page"
+      >
+        <FaChevronRight size={16} />
+      </button>
+    </div>
+  );
+};
+
+export default Pagination;
