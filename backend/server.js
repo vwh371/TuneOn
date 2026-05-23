@@ -101,7 +101,6 @@ const createDefaultAdmin = async () => {
             });
             console.log(' Default admin user created successfully');
             console.log(`   Email: ${process.env.ADMIN_EMAIL}`);
-            console.log(`   Password: ${process.env.ADMIN_PASSWORD}`);
         } else {
             console.log(' Admin user already exists');
         }
