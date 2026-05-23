@@ -84,3 +84,17 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </>
       )}
       
+      {/* Next Button */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="p-2 rounded-lg bg-gray-800 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition"
+        aria-label="Next page"
+      >
+        <FaChevronRight size={16} />
+      </button>
+    </div>
+  );
+};
+
+export default Pagination;
