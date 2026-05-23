@@ -41,3 +41,16 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         <FaChevronLeft size={16} />
       </button>
       
+      {/* First Page and Ellipsis */}
+      {getPageNumbers()[0] > 1 && (
+        <>
+          <button
+            onClick={() => onPageChange(1)}
+            className="px-3 py-1 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition"
+          >
+            1
+          </button>
+          {getPageNumbers()[0] > 2 && <span className="text-gray-400">...</span>}
+        </>
+      )}
+      
