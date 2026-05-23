@@ -54,3 +54,18 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </>
       )}
       
+      {/* Page Numbers */}
+      {getPageNumbers().map(page => (
+        <button
+          key={page}
+          onClick={() => onPageChange(page)}
+          className={`px-3 py-1 rounded-lg transition ${
+            currentPage === page
+              ? 'bg-green-500 text-white'
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          }`}
+        >
+          {page}
+        </button>
+      ))}
+      
