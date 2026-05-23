@@ -32,4 +32,36 @@ const Register = () => {
     });
   };
 
-export default Register;
+  // Handle form submission
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
+    setError('');
+    setLoading(true);
+    
+    try {
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      navigate('/');  // Redirect to home on success
+    } catch (error) {
+      // Error handled in AuthContext
+      console.error('Registration error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
