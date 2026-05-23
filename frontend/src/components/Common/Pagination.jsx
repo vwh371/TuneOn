@@ -69,3 +69,18 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </button>
       ))}
       
+      {/* Last Page and Ellipsis */}
+      {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+        <>
+          {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
+            <span className="text-gray-400">...</span>
+          )}
+          <button
+            onClick={() => onPageChange(totalPages)}
+            className="px-3 py-1 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition"
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+      
